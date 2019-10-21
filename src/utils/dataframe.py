@@ -60,9 +60,7 @@ def one_hot_encode(dataset, threshold):
     # Replace the ones which ratio is lower than the threshold by a special name
     dataset[~mask] = 'others'
 
-    onehot_dataset = pd.get_dummies(dataset, prefix=dataset.name)
-
-    return onehot_dataset
+    return pd.get_dummies(dataset, prefix=dataset.name, prefix_sep=':')
 
 
 def str_encode(dataset, threshold, sep=','):
@@ -89,7 +87,7 @@ def str_encode(dataset, threshold, sep=','):
     # turn dict to pd.DataFrame
     res = pd.DataFrame(res_list)
     # remove the dummy empty ''
-    res = res.drop(axis=1, columns='').fillna(0)
+    res = res.drop(columns='', axis=1).fillna(0)
 
     # Remove infrequent
     res_bin = (res > 0).astype(int)
@@ -99,10 +97,27 @@ def str_encode(dataset, threshold, sep=','):
     ind_mask = count.index[~ind]
 
     # Slice and rename
-    onehot = res.loc[:, ind_keep].copy()
+    one_hot = res.loc[:, ind_keep].copy()
     if len(ind_keep) < res.shape[1]:
-        onehot = onehot.assign(others=res.loc[:, ind_mask].sum(axis=1).astype('float'))
+        one_hot = one_hot.assign(others=res.loc[:, ind_mask].sum(axis=1).astype('float'))
 
-    onehot.rename(columns=lambda x: dataset.name + ':' + x, inplace=True)
+    one_hot.rename(columns=lambda x: dataset.name + ':' + x, inplace=True)
 
-    return onehot
+    return one_hot
+
+
+def get_feature_name(columns):
+    """
+
+    :param columns
+    :return: dataframe
+    """
+
+    feature_name = columns.ravel()
+    dframe_feature = pd.DataFrame({'feature_name': feature_name})
+    dframe_feature_ = dframe_feature.feature_name.str.split(':', expand=True)
+    dframe_feature_.columns = ['var', 'level']
+    d_feature = pd.concat([dframe_feature, dframe_feature_], axis=1)
+    d_feature = d_feature.assign(type=lambda x: x.level.isnull().apply(lambda x: 'num' if x else 'cat'))
+
+    return d_feature

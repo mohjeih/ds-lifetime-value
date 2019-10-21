@@ -39,13 +39,13 @@ class TrxPrep(object):
 
         df_cart_info = dataset[['ID', 'cartID', 'cartDate',
                                 'cartDate_MD_flag', 'cartDate_MD_season',
-                                'cartDate_MD_wave', 'cartDate_MD_year'
-                                ]].drop_duplicates()
+                                'cartDate_MD_wave'
+                                ]].drop_duplicates()  # , 'cartDate_MD_year'
 
         df_cart_info.reset_index(inplace=True, drop=True)
 
         # Categorical features
-        cat_vars = ['cartDate_MD_season', 'cartDate_MD_wave', 'cartDate_MD_year']
+        cat_vars = ['cartDate_MD_season', 'cartDate_MD_wave']  # , 'cartDate_MD_year'
         cart_cat = df_cart_info[['ID']]
         features_cart_cat_list = list()
         for cat_var in cat_vars:
@@ -256,7 +256,7 @@ class TrxPrep(object):
 
         df_net_cart = dataset.groupby(['ID', 'cartID', 'cartDate',
                                        'cartDate_MD_flag', 'cartDate_MD_season',
-                                       'cartDate_MD_wave', 'cartDate_MD_year'
+                                       'cartDate_MD_wave'
                                        ]) \
             .agg({
                 'nNet': [('nItems_inCart', 'sum')],
@@ -266,7 +266,7 @@ class TrxPrep(object):
                     ('marginCAD_item_unit_avg', 'mean'),
                     ('marginCAD_item_unit_median', 'median')
                 ]
-            })
+            })  # , 'cartDate_MD_year'
 
         df_net_cart.columns = df_net_cart.columns.droplevel(level=0)
         df_net_cart.reset_index(inplace=True)
@@ -336,6 +336,8 @@ class TrxPrep(object):
             day_since_last_year_first_order_net=lambda x: (end_date - x.cart_date_min).dt.days,
             day_since_last_order_net=lambda x: (end_date - x.cart_date_max).dt.days
         )
+
+        features_cart_num.drop(columns=['cart_date_min', 'cart_date_max'], axis=1, inplace=True)
 
         # Calculate card volumes per md and fp
         features_cart_num_md_ = dataset \
@@ -476,7 +478,8 @@ class TrxPrep(object):
 
         return features_return
 
-    def flag_resellers(self, dataset):
+    @staticmethod
+    def flag_res(dataset):
 
         """
 
@@ -486,7 +489,7 @@ class TrxPrep(object):
         :return: dataframe
         """
 
-        logger.info('Returning resellers... ')
+        logger.info('Introducing resellers... ')
 
         df_res = dataset[['ID', 'flagReseller']].drop_duplicates(subset='ID').copy()
 
@@ -494,7 +497,8 @@ class TrxPrep(object):
 
         return df_res
 
-    def merge_feats(self, dict_dataset):
+    @staticmethod
+    def merge_feats(dict_dataset: dict):
 
         """
 
@@ -524,12 +528,10 @@ class TrxPrep(object):
             return_ratio_valueCAD=lambda x: x.valueCAD_R_sum/(x.valueCAD_R_sum + x.valueCAD_sum_cart)
         )
 
-        dataset['start_date'] = self.start_date
-        dataset['end_date'] = self.end_date
-
         return dataset
 
-    def post_res(self, dataset):
+    @staticmethod
+    def post_res(dataset):
 
         dataset = dataset.copy()
 
@@ -580,7 +582,7 @@ class TrxPrep(object):
 
         return_feats = self.data_return(ret_dataset)
 
-        res_dataset = self.flag_resellers(trx_dataset)
+        res_dataset = TrxPrep.flag_res(trx_dataset)
 
         dict_df = {
             'cart_feats': cart_feats,
@@ -590,9 +592,9 @@ class TrxPrep(object):
             'resellers_flag': res_dataset
         }
 
-        trx_feats = self.merge_feats(dict_df)
+        trx_feats = TrxPrep.merge_feats(dict_df)
 
-        trx_feats = self.post_res(trx_feats)
+        trx_feats = TrxPrep.post_res(trx_feats)
 
         logger.info('trx shape: {}'.format(trx_feats.shape))
 

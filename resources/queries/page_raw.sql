@@ -9,7 +9,7 @@ case
 when pdmc.memberID is not null and pdmc.conversion = 1 then pdmc.memberID
 else pdmc.fullVisitorId
 end as ID,
-pdmc.*
+pdmc.* except(conversion)
 
 from(
 

@@ -14,7 +14,7 @@ from(
 select *
 from `ds_sessions_value._brx_features`
 where conversion_po != 1
-and rand() < 0.1 ) bf
-limit 400000)
+and rand() < 0.5 ) bf  -- 0.1
+limit 800000) -- 300000
 
 ) x

@@ -40,15 +40,15 @@ class DataExt(object):
         sw = Stopwatch(start=True)
 
         file_name = {
-            'trx_po': 'trx_po.pkl',
             'trx_pt': 'trx_pt.pkl',
-            'brx_po': 'brx_po.pkl',
-            'brx_pt': 'brx_pt.pkl'
+            'trx_po': 'trx_po.pkl',
+            'brx_pt': 'brx_pt.pkl',
+            'brx_po': 'brx_po.pkl'
         }
 
-        # logger.info('Extracting invoice data: {} to {} ...'.format(self.start_po, datetime.today()))
-        #
-        # DataRet(self.start_po, self.end_po).invoice_ext(table_id='_invoices_po')
+        logger.info('Extracting invoice data: {} to {} ...'.format(self.start_po, datetime.today()))
+
+        DataRet(self.start_po, self.end_po).invoice_ext(table_id='_invoices_po')
 
         logger.info('Extracting training data: {} to {} ...'.format(self.start_pt, self.end_pt))
 
@@ -68,7 +68,11 @@ class DataExt(object):
         trx_feats = trx_prep.trx_data_prep()
         dump(trx_feats, get_data_dir(file_name['trx_po']))
 
-        data_prep = DataPrep(file_name=file_name, test_size=0.20)
+        brx_prep = BrxPrep(self.start_po, self.end_po, brx_threshold, ext=False)
+        brx_feats = brx_prep.brx_data_prep()
+        dump(brx_feats, get_data_dir(file_name['brx_po']))
+
+        data_prep = DataPrep(file_name=file_name, test_size=0.30)
         data_prep.prep()
 
         logger.info('Elapsed time of ETL job: {}'.format(sw.elapsed.human_str()))

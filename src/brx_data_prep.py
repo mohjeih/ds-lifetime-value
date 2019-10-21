@@ -35,19 +35,20 @@ class BrxPrep(object):
         cat_vars = ['deviceCategory', 'operatingSystem', 'browser',
                     'deviceLanguage', 'deviceCountry', 'country',
                     'subContinent', 'channel', 'mobileDeviceBranding',
-                    'session_md_wave', 'session_md_season', 'session_md_year',
+                    'session_md_wave', 'session_md_season',
                     'pdp_category',  'pdp_brand', 'UserListName',
                     'adChannelType', 'adWord'
-                    ]
+                    ] # 'session_md_year',
 
         dataset_cat = dataset[['ID']]
+        dataset_cat.reset_index(drop=True, inplace=True)
 
         for cat_var in cat_vars:
-            logger.info('Categorical features encoding: ' + str(cat_var))
-            if cat_var != 'adWord':
-                df_onehot = str_encode(dataset[cat_var], threshold=self.threshold)
+            logger.info('Categorical features encoding: {}'.format(cat_var))
+            if cat_var == 'adWord':
+                df_onehot = str_encode(dataset[cat_var], threshold=0.5*self.threshold)
             else:
-                df_onehot = str_encode(dataset[cat_var], threshold=0.1*self.threshold)
+                df_onehot = str_encode(dataset[cat_var], threshold=self.threshold)
             dataset_cat = pd.concat([dataset_cat, df_onehot], axis=1)
 
         # subset non-categorical features
@@ -59,13 +60,27 @@ class BrxPrep(object):
         dataset = join_datasets(dataset_cat, dataset_num, how='inner', key='ID')
 
         assert dataset.shape[1] == dataset_cat.shape[1] + dataset_num.shape[1] - 1
-        assert dataset.shape[0] == dataset_cat.shape[0] == dataset.shape[0]
+        assert dataset.shape[0] == dataset_cat.shape[0] == dataset_num.shape[0]
 
         return dataset
 
-    def merge_feats(self, dataset):
+    @staticmethod
+    def user_gens(dataset, chunk_size=100000):
 
-        logger.info('Aggregating all features at visitor level... ')
+        logger.info('Creating users generator... ')
+
+        user_list = dataset.ID.tolist()
+
+        return (user_list[i:i + chunk_size] for i in range(0, len(user_list), chunk_size))
+
+    @staticmethod
+    def post_feats(dataset):
+
+        logger.info('Processing features... ')
+
+        dataset = dataset.copy()
+
+        dataset.reset_index(drop=True, inplace=True)
 
         # Fill na on non-std/ratio variables
         dataset = pd.concat(
@@ -74,9 +89,8 @@ class BrxPrep(object):
             axis=1
         )
 
-        dataset['start_date'] = self.start_date
-        dataset['end_date'] = self.end_date
         dataset.set_index('ID', inplace=True)
+
         col2float = dataset.columns[~(dataset.dtypes == 'object')]
         dataset[col2float] = dataset[col2float].astype('float64')
 
@@ -84,15 +98,39 @@ class BrxPrep(object):
 
         return dataset
 
-    def brx_data_prep(self):
+    def brx_data_prep(self, chunk_size=50000):
 
         brx_dataset = BrxRet(self.start_date, self.end_date, self.ext).ret()
 
-        brx_dataset.drop(columns=['conversion', 'conversion_po'], axis=1, inplace=True)
+        if self.ext:
+            brx_dataset.drop(columns=['conversion_po'], axis=1, inplace=True)
 
-        brx_feats = self.cat_feats(brx_dataset)
+        user_gen = BrxPrep.user_gens(brx_dataset, chunk_size)
 
-        brx_feats = self.merge_feats(brx_feats)
+        brx_feats = pd.DataFrame()
+
+        count = 0
+
+        for Ids in user_gen:
+
+            count += 1
+
+            logger.info('The number of users in sublist {}: {}'.format(count, len(Ids)))
+
+            brx_pt_subset = brx_dataset.pipe(lambda x: x[x.ID.isin(Ids)])
+
+            brx_pt_subset = self.cat_feats(brx_pt_subset)
+
+            brx_feats = brx_feats.append(brx_pt_subset, sort=False)
+
+        brx_feats = BrxPrep.post_feats(brx_feats)
 
         return brx_feats
+
+
+# if __name__ == '__main__':
+#
+#     brx_feats = BrxPrep(start_date='2019-10-18', end_date='2019-10-18', threshold=0.01, ext=True)\
+#         .brx_data_prep(chunk_size=100000)
+
 

@@ -1,4 +1,5 @@
 
+
 select
 @colnames
 from (
@@ -9,7 +10,7 @@ case
 when smd.memberID is not null and smd.conversion = 1 then smd.memberID
 else smd.fullVisitorId
 end as ID,
-smd.*
+smd.* except(conversion)
 
 from(
 
@@ -35,14 +36,15 @@ from
     s.*,
     md.isMD as session_in_md,
     md.wave as session_md_wave,
-    md.season as session_md_season,
-    md.currentYear as session_md_year
+    md.season as session_md_season
+    -- md.currentYear as session_md_year
 from `ds_sessions_value._session_raw_agg` s
 
 inner join(
 select distinct sc.fullVisitorId
 from `ds_sessions_value._session_raw_agg` sc
 where sc.channel in ('SEM_PLA', 'SEM_Non_Branded', 'Display')
+and sc.date = (select max(so.date) from `ds_sessions_value._session_raw_agg` so)
 ) as t
 on s.fullVisitorId = t.fullVisitorId
 

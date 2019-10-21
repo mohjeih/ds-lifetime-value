@@ -3,11 +3,11 @@ select
 @colnames
 from (
 
-select distinct sf.* except(conversion),
-case
-when regexp_contains(sf.conversion, "1") then 1
-else 0
-end as conversion
+select distinct sf.*
+-- case
+-- when regexp_contains(sf.conversion, "1") then 1
+-- else 0
+-- end as conversion
 
 from
 
@@ -51,9 +51,9 @@ from
     sum(session_in_md) as session_in_md,
     avg(session_in_md) as session_in_md_avg,
     STRING_AGG(SAFE_CAST(session_md_season as string)) as session_md_season,
-    STRING_AGG(SAFE_CAST(session_md_wave as string)) as session_md_wave,
-    STRING_AGG(SAFE_CAST(session_md_year as string)) as session_md_year,
-    STRING_AGG(SAFE_CAST(conversion as string)) as conversion
+    STRING_AGG(SAFE_CAST(session_md_wave as string)) as session_md_wave
+    -- STRING_AGG(SAFE_CAST(session_md_year as string)) as session_md_year
+--     STRING_AGG(SAFE_CAST(conversion as string)) as conversion
 from `ds_sessions_value._session_md`
 where (date >= '@start_date' and date <= '@end_date')
 group by ID) as s

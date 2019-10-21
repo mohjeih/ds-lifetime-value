@@ -9,7 +9,6 @@ Created on Aug 2019
 
 import numpy as np
 from src.data_retrieve import DataRet
-from src.utils.resources import normalize
 from src.utils.dataframe import *
 from src.data_extraction.carts import CartsQuery
 from src.utils.bq_helper import *
@@ -116,12 +115,13 @@ class TrxRet(DataRet):
             dataset[dataset.flagReseller == 1].marginCAD_net > non_rs_marginCAD_net, non_rs_marginCAD_net,
             dataset.loc[dataset.flagReseller == 1, 'marginCAD_net'])
 
-        # dataset.fullVisitorId = cast_type(dataset, 'fullVisitorId', 'int64')
         if self.ext:
             mid_dataset = dataset[['memberID', 'fullVisitorId']].copy()
             mid_dataset.sort_values(by='memberID', inplace=True)
             mid_dataset.drop_duplicates(subset=['fullVisitorId'], inplace=True)
             self.mid_ext(table_id='_users', dataset=mid_dataset)
+
+        dataset.memberID = cast_type(dataset, 'memberID', type='str')
 
         dataset.rename(columns={'memberID': 'ID'}, inplace=True)
 
@@ -150,8 +150,6 @@ class TrxRet(DataRet):
         dataset = join_datasets(dataset, invoice_dataset[['fullVisitorId', 'invoiceID']], how='left', key='invoiceID')
 
         logger.info('Shape of trx data before removing users: {}'.format(dataset.shape))
-
-        # dump(dataset, get_data_dir('trx_df_po.pkl'))
 
         dataset = self.net_feats(dataset)
 
