@@ -3,9 +3,9 @@
 update_source_code() {
     GIT_REPO=$1
     echo $GIT_REPO
-#    cd $GIT_REPO
-#    git pull &>> $CURRENT_DIR/update.log
-#    cat $CURRENT_DIR/update.log
+    cd $GIT_REPO
+    git pull &>> $CURRENT_DIR/update.log
+    cat $CURRENT_DIR/update.log
 }
 
 #update_python_environment() {
