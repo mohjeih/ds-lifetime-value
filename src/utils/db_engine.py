@@ -1,6 +1,6 @@
 
 """
-@name: mysql_db.py
+@name: db_engine.py
 
 @author: Mohammad Jeihoonian
 
@@ -76,8 +76,6 @@ def get_data_slave(db_name: str, query: str, cols_list: list,
     :param query: string, the actual query
 
     :return pd.DataFrame, a dataframes with queried data, no column names
-
-
     """
 
     try:
@@ -95,3 +93,14 @@ def get_data_slave(db_name: str, query: str, cols_list: list,
         raise err
 
     return dataset
+
+
+def s3_aws_engine(name: str):
+    """
+
+    Retrieve AWS credentials
+    """
+
+    s3_cfg = load_configuration(name)
+
+    return s3_cfg['bucket'], s3_cfg['id'], s3_cfg['secret']

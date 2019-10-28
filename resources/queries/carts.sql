@@ -34,9 +34,7 @@ select distinct
 	   sum(case when ri.originalOrderItemID is not null then ci.quantity else 0 end) as nR,
 	   round(sum(ci.quantity*(ci.price-coalesce(ci.discount,0))/er.rate),2) as valueCAD_P,
 	   round(sum(case when ri.originalOrderItemID is not null then ci.quantity*(ci.price-coalesce(ci.discount,0))/er.rate else 0 end),2) as valueCAD_R,
--- 	   sum(ci.quantity*ps.cost) as cogsCAD_P_dep,
 	   sum(ci.quantity*costs.cost) as cogsCAD_P,
--- 	   sum(case when ri.originalOrderItemID is not null then ci.quantity*ps.cost else 0 end) as cogsCAD_R_dep,
 	   sum(case when ri.originalOrderItemID is not null then ci.quantity*costs.cost else 0 end) as cogsCAD_R,
 	   lr.reason as return_reason
 from carts c

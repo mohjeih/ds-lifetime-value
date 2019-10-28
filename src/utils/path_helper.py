@@ -30,6 +30,12 @@ MODEL_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR = TARGET_DIR / 'data'
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+TRAIN_DIR = DATA_DIR / 'train'
+TRAIN_DIR.mkdir(parents=True, exist_ok=True)
+
+PRED_DIR = DATA_DIR / 'predict'
+PRED_DIR.mkdir(parents=True, exist_ok=True)
+
 FIG_DIR = TARGET_DIR / 'fig'
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -52,3 +58,11 @@ def get_model_dir(filename: str) -> Path:
 
 def get_data_dir(filename: str) -> Path:
     return DATA_DIR / filename
+
+
+def get_train_dir(filename: str) -> Path:
+    return TRAIN_DIR / filename
+
+
+def get_predict_dir(filename: str) -> Path:
+    return PRED_DIR / filename

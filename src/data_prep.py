@@ -170,6 +170,12 @@ class DataPrep(object):
 
         X_pred = DataPrep.po_x(trx_po, brx_po)
 
+        pres_cols = X.columns.intersection(X_pred.columns)
+
+        logger.info('Columns Intersection: {}'.format(pres_cols.shape[0]))
+
+        X = X[pres_cols]
+
         logger.info('Building train and test splits per each model...')
 
         # Build train and test sets
@@ -186,7 +192,7 @@ class DataPrep(object):
         logger.info('y_clf_train and y_clf_test shapes: {}, {}'.format(y_clf_train.shape, y_clf_test.shape))
 
         dump(clf_train, get_data_dir('clf_train.pkl'))
-        dump(clf_test, get_data_dir('clf_test.pkl'))
+        dump(clf_test, get_data_dir('clf_val.pkl'))
 
         X_reg_train = X[indP & X.index.isin(X_clf_train.index)]
         X_reg_test = X[indP & X.index.isin(X_clf_test.index)]
@@ -201,15 +207,12 @@ class DataPrep(object):
         logger.info('y_reg_train and y_reg_test shapes: {}, {}'.format(y_reg_train.shape, y_reg_test.shape))
 
         dump(reg_train, get_data_dir('reg_train.pkl'))
-        dump(reg_test, get_data_dir('reg_test.pkl'))
-
-        pres_cols = X.columns.intersection(X_pred.columns)
-
-        logger.info('Columns Intersection: {}'.format(pres_cols.shape[0]))
+        dump(reg_test, get_data_dir('reg_val.pkl'))
 
         X_pred = X_pred[pres_cols]
 
         dump(X_pred, get_data_dir('X_pred.pkl'))
+
 
 
 

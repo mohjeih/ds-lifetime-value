@@ -15,7 +15,7 @@ from abc import ABCMeta, ABC, abstractmethod
 from google.cloud import bigquery
 from typing import Dict
 from src.utils.path_helper import get_config
-from src.utils.mysql_db import get_data_slave
+from src.utils.db_engine import get_data_slave
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
