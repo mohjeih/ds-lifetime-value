@@ -8,14 +8,14 @@ update_source_code() {
     cat $CURRENT_DIR/update.log
 }
 
-#update_python_environment() {
-#    # Activate virtuale enviromment
-#    source activate recommendation_env
-#
-#    cd $GIT_REPO
-#    # update dependency
-#    conda  env  update -f=environment.yml
-#}
+update_python_environment() {
+    # Activate virtuale environment
+    source activate cltv_env
+
+    cd $GIT_REPO
+    # update dependency
+    conda  env  update -f=environment.yml
+}
 
 SCRIPT=$(readlink -f $0)
 GIT_REPO=`dirname $SCRIPT`
@@ -25,5 +25,5 @@ CURRENT_DIR=`pwd`
 > $CURRENT_DIR/update.log
 
 update_source_code `dirname $SCRIPT`
-#update_python_environment $CURRENT_DIR
-#cd
+update_python_environment $CURRENT_DIR
+cd
