@@ -16,14 +16,14 @@ update_source_code() {
 #    # update dependency
 #    conda  env  update -f=environment.yml
 #}
-#
-#SCRIPT=$(readlink -f $0)
-#GIT_REPO=`dirname $SCRIPT`
-#CURRENT_DIR=`pwd`
-#
-#
-#> $CURRENT_DIR/update.log
-#
+
+SCRIPT=$(readlink -f $0)
+GIT_REPO=`dirname $SCRIPT`
+CURRENT_DIR=`pwd`
+
+
+> $CURRENT_DIR/update.log
+
 update_source_code `dirname $SCRIPT`
 #update_python_environment $CURRENT_DIR
 #cd
