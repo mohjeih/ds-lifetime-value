@@ -24,6 +24,6 @@ update_source_code() {
 #
 #> $CURRENT_DIR/update.log
 #
-#update_source_code `dirname $SCRIPT`
+update_source_code `dirname $SCRIPT`
 #update_python_environment $CURRENT_DIR
 #cd
