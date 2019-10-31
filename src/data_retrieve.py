@@ -7,7 +7,6 @@
 Created on Aug 2019
 """
 
-import datetime
 import logging
 from src.utils.resources import normalize
 from src.data_extraction.products import ProductQuery
@@ -28,9 +27,8 @@ class DataRet(object):
         self.end_date = end_date
         self.dataset_id = 'ds_sessions_value'
         self.bucket_name = 'ga_ltv'
-        self.dir_name = 'brx_dir'
         self.file_name = 'brx_*.csv'
-        self.prefix = 'brx_dir/brx_'
+        self.prefix = 'brx_'
 
     def pd_ext(self, table_id):
 
@@ -80,7 +78,7 @@ class DataRet(object):
 
     def mid_ext(self, table_id, dataset):
 
-        logger.info('Uploading memberIDs to BQ...')
+        logger.info('Uploading memberIDs to Bigquery...')
 
         export_pandas_to_table(self.dataset_id, table_id=table_id, dataset=dataset)
 

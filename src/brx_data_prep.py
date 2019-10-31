@@ -12,6 +12,7 @@ import pandas as pd
 import re
 from src.brx_data_retrieve import BrxRet
 from src.utils.dataframe import join_datasets, str_encode
+from timeutils import Stopwatch
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ class BrxPrep(object):
         return dataset
 
     @staticmethod
-    def user_gens(dataset, chunk_size=100000):
+    def user_gens(dataset, chunk_size=50000):
 
         logger.info('Creating users generator... ')
 
@@ -100,6 +101,8 @@ class BrxPrep(object):
 
     def brx_data_prep(self, chunk_size=50000):
 
+        sw = Stopwatch(start=True)
+
         brx_dataset = BrxRet(self.start_date, self.end_date, self.ext).ret()
 
         if self.ext:
@@ -124,6 +127,11 @@ class BrxPrep(object):
             brx_feats = brx_feats.append(brx_pt_subset, sort=False)
 
         brx_feats = BrxPrep.post_feats(brx_feats)
+
+        if self.ext:
+            logger.info('Elapsed time of brx ETL (pt): {}'.format(sw.elapsed.human_str()))
+        else:
+            logger.info('Elapsed time of brx ETL (po): {}'.format(sw.elapsed.human_str()))
 
         return brx_feats
 

@@ -57,7 +57,7 @@ def remove_file_from_google_storage(bucket_name: str, prefix: str):
         blob.delete()
 
 
-def export_table_to_google_storage(dataset_id: str, table_id: str, bucket_name: str, dir_name: str, file_name: str, location='US'):
+def export_table_to_google_storage(dataset_id: str, table_id: str, bucket_name: str, file_name: str, location='US'):
     """
 
     Export a table to Google Cloud Storage in csv format
@@ -66,7 +66,7 @@ def export_table_to_google_storage(dataset_id: str, table_id: str, bucket_name: 
     """
 
     storage_client = bigquery.Client()
-    destination_uri = 'gs://{}/{}/{}'.format(bucket_name, dir_name, file_name)
+    destination_uri = 'gs://{}/{}'.format(bucket_name, file_name)
     dataset_ref = storage_client.dataset(dataset_id)
     table_ref = dataset_ref.table(table_id)
 
@@ -93,7 +93,7 @@ def download_from_storage_to_pandas(bucket_name: str, prefix: str, col_type: dic
 
     list_temp_raw = []
     for file in blobs:
-        logger.info('Reading {}: '.format(bucket_name + '/' + file.name))
+        logger.info('Fetching {}: '.format(bucket_name + '/' + file.name))
         file_contents = file.download_as_string()
         temp = pd.read_csv(io.BytesIO(file_contents), encoding='utf-8', dtype=col_type)
         list_temp_raw.append(temp)

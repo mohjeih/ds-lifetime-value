@@ -12,6 +12,7 @@ import logging
 import numpy as np
 from src.trx_data_retrieve import TrxRet
 from src.utils.dataframe import *
+from timeutils import Stopwatch
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -568,6 +569,8 @@ class TrxPrep(object):
 
     def trx_data_prep(self):
 
+        sw = Stopwatch(start=True)
+
         trx_dataset = TrxRet(self.start_date, self.end_date, self.ext).ret()
 
         cart_feats = self.data_cart(trx_dataset)
@@ -597,6 +600,11 @@ class TrxPrep(object):
         trx_feats = TrxPrep.post_res(trx_feats)
 
         logger.info('trx shape: {}'.format(trx_feats.shape))
+
+        if self.ext:
+            logger.info('Elapsed time of trx ETL (pt): {}'.format(sw.elapsed.human_str()))
+        else:
+            logger.info('Elapsed time of trx ETL (po): {}'.format(sw.elapsed.human_str()))
 
         return trx_feats
 

@@ -27,7 +27,7 @@ class TrxRet(DataRet):
         remove_file_from_google_storage(bucket_name=self.bucket_name, prefix=self.prefix)
 
         export_table_to_google_storage(dataset_id=self.dataset_id, table_id=table_id,
-                                       bucket_name=self.bucket_name, dir_name=self.dir_name,
+                                       bucket_name=self.bucket_name,
                                        file_name=self.file_name)
 
         invoice_dataset = download_from_storage_to_pandas(bucket_name=self.bucket_name, prefix=self.prefix,

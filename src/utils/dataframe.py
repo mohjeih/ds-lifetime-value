@@ -116,8 +116,8 @@ def get_feature_name(columns):
     feature_name = columns.ravel()
     dframe_feature = pd.DataFrame({'feature_name': feature_name})
     dframe_feature_ = dframe_feature.feature_name.str.split(':', expand=True)
-    dframe_feature_.columns = ['var', 'level']
+    dframe_feature_.rename(columns={0: 'var', 1: 'level'}, inplace=True)
     d_feature = pd.concat([dframe_feature, dframe_feature_], axis=1)
-    d_feature = d_feature.assign(type=lambda x: x.level.isnull().apply(lambda x: 'num' if x else 'cat'))
+    d_feature = d_feature.assign(type=lambda x: x.level.isnull().apply(lambda y: 'num' if y else 'cat'))
 
     return d_feature

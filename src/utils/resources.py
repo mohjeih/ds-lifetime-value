@@ -7,6 +7,7 @@
 Created on Aug 2019
 """
 
+import json
 import pickle
 import unicodedata
 
@@ -48,5 +49,19 @@ def load(filename):
         return dataset
     except Exception:
         raise ValueError('Failed to load {}'.format(filename))
+
+
+def dump_param_json(obj, filename):
+    """
+    Dump output parameters as json file
+    :param obj
+    :param filename
+    """
+
+    try:
+        with filename.open('w') as file:
+            json.dump(obj, file)
+    except Exception:
+        raise ValueError("Failed to dump the desired file")
 
 

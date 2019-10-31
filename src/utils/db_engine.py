@@ -104,3 +104,19 @@ def s3_aws_engine(name: str):
     s3_cfg = load_configuration(name)
 
     return s3_cfg['bucket'], s3_cfg['id'], s3_cfg['secret']
+
+
+def get_aws_role(name: str):
+    """
+
+    Retrieve AWS role
+    """
+
+    aws_role = load_configuration(name)
+
+    if ':role/' in aws_role['aws_role']:
+        return aws_role['aws_role']
+    else:
+        message = 'The current AWS identity is not a role: {}'
+        raise ValueError(message.format(aws_role['aws_role']))
+

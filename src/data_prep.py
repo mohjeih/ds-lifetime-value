@@ -7,13 +7,17 @@
 Created on Oct 2019
 """
 
+import boto3
 import logging
 import numpy as np
+import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from src.utils.dataframe import join_datasets, get_feature_name
-from src.utils.resources import load, dump
-from src.utils.path_helper import get_data_dir
+from src.utils.db_engine import s3_aws_engine
+from src.utils.path_helper import S3_DIR, get_data_dir, get_train_dir, get_val_dir
+from src.utils.resources import dump
+from timeutils import Stopwatch
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,40 +25,68 @@ logger = logging.getLogger(__name__)
 
 class DataPrep(object):
 
-    def __init__(self, file_name, test_size):
+    def __init__(self, trx_pt, brx_pt, trx_po, brx_po, test_size, aws_env):
 
-        self.file_name = file_name
+        self.trx_pt = trx_pt
+        self.brx_pt = brx_pt
+        self.trx_po = trx_po
+        self.brx_po = brx_po
         self.test_size = test_size
+        self.aws_env = aws_env
 
-    def load_data(self):
+    # def load_data(self):
+    #     """
+    #
+    #     Load data files
+    #     """
+    #
+    #     trx_pt = load(get_data_dir(self.file_name['trx_pt']))
+    #
+    #     brx_pt = load(get_data_dir(self.file_name['brx_pt']))
+    #
+    #     trx_po = load(get_data_dir(self.file_name['trx_po']))
+    #
+    #     brx_po = load(get_data_dir(self.file_name['brx_po']))
+    #
+    #     return trx_pt, brx_pt, trx_po, brx_po
+
+    def _push_to_s3(self, local_path=str(S3_DIR)+'/'):
+        """
+        Upload local files in folder to s3 bucket
+
+
+        :param local_path: local path
         """
 
-        Load data files
-        """
+        sw = Stopwatch(start=True)
 
-        trx_pt = load(get_data_dir(self.file_name['trx_pt']))
+        # Get s3 client
+        s3_bucket, id, secret = s3_aws_engine(name=self.aws_env)
 
-        brx_pt = load(get_data_dir(self.file_name['brx_pt']))
+        s3c = boto3.client('s3', aws_access_key_id=id, aws_secret_access_key=secret)
 
-        trx_po = load(get_data_dir(self.file_name['trx_po']))
+        for root, dirs, files in os.walk(local_path):
 
-        brx_po = load(get_data_dir(self.file_name['brx_po']))
+            for file in files:
+                local_file_path = os.path.join(root, file)
+                s3_file_path = root[len(local_path):] + '/' + file
+                logger.info("Uploading {} to s3://{}/{}".format(local_file_path, s3_bucket, s3_file_path))
+                s3c.upload_file(local_file_path, s3_bucket, s3_file_path)
 
-        return trx_pt, brx_pt, trx_po, brx_po
+        logger.info('Elapsed time of files upload to S3 bucket: {}'.format(sw.elapsed.human_str()))
 
-    @staticmethod
-    def pt_x(trx_pt, brx_pt):
+    def pt_x(self):
         """
 
         Prepare features for training
         """
 
-        logger.info('trx_pt shape: {}'.format(trx_pt.shape))
-        logger.info('brx_pt shape: {}'.format(brx_pt.shape))
+        logger.info('trx_pt shape: {}'.format(self.trx_pt.shape))
+        logger.info('brx_pt shape: {}'.format(self.brx_pt.shape))
 
         logger.info('Joining trx and brx for period of training (pt)...')
 
-        brx_trx_pt = join_datasets(trx_pt, brx_pt, how='right', key=None)
+        brx_trx_pt = join_datasets(self.trx_pt, self.brx_pt, how='right', key=None)
         logger.info('pt_brx_trx shape: {}'.format(brx_trx_pt.shape))
 
         # filling missing values
@@ -73,7 +105,7 @@ class DataPrep(object):
         highly_skewed_var = brx_trx_pt[features_df[features_df.type == 'num']['feature_name']].filter(
             regex=r'^((?!bin|std|ratio).)*$').skew().abs() >= 2
 
-        ind = highly_skewed_var[highly_skewed_var.values==True].index
+        ind = highly_skewed_var[highly_skewed_var.values == True].index
 
         logger.info('The number of highly skewed features: {}'.format(ind.shape))
 
@@ -83,22 +115,21 @@ class DataPrep(object):
 
         return brx_trx_pt
 
-    @staticmethod
-    def po_y(trx_po, X):
+    def po_y(self, margin_val, index_val):
         """
 
         Prepare labels for training
         """
 
-        logger.info('trx_po shape: {}'.format(trx_po.shape[0]))
+        logger.info('trx_po shape: {}'.format(self.trx_po.shape[0]))
 
         logger.info('Building target values for period of training (pt)...')
 
         # create Y
-        Y = trx_po[['marginCAD_sum_cart']].rename(columns={'marginCAD_sum_cart': 'LTV_52W'})\
+        Y = self.trx_po[['marginCAD_sum_cart']].rename(columns={'marginCAD_sum_cart': 'LTV_52W'})\
             .assign(LTV_active=lambda x: x.LTV_52W >= 1)
 
-        Y_w_pt = join_datasets(Y, X[['marginCAD_sum_cart']], how='right', key=None)
+        Y_w_pt = join_datasets(Y, margin_val, how='right', key=None)
 
         Y_w_pt.rename(columns={'marginCAD_sum_cart': 'LTV_pt'}, inplace=True)
 
@@ -109,7 +140,7 @@ class DataPrep(object):
         logger.info('Y shape: {}'.format(Y_w_pt.shape))
 
         # assert right join
-        pd.testing.assert_index_equal(X.index, Y_w_pt.index)
+        pd.testing.assert_index_equal(index_val, Y_w_pt.index)
 
         # y_label: determine if user is active, flag as 0/1
         y_label = Y_w_pt['LTV_active'].astype('int8')
@@ -119,19 +150,18 @@ class DataPrep(object):
 
         return y_label, y_value
 
-    @staticmethod
-    def po_x(trx_po, brx_po):
+    def po_x(self):
         """
 
         Prepare features for prediction
         """
 
-        logger.info('trx_po shape: {}'.format(trx_po.shape))
-        logger.info('brx_po shape: {}'.format(brx_po.shape))
+        logger.info('trx_po shape: {}'.format(self.trx_po.shape))
+        logger.info('brx_po shape: {}'.format(self.brx_po.shape))
 
         logger.info('Joining trx and brx for period of observation (po)...')
 
-        brx_trx_po = join_datasets(trx_po, brx_po, how='right', key=None)
+        brx_trx_po = join_datasets(self.trx_po, self.brx_po, how='right', key=None)
         logger.info('brx_trx_po shape: {}'.format(brx_trx_po.shape))
 
         # filling missing values
@@ -162,13 +192,15 @@ class DataPrep(object):
 
     def prep(self):
 
-        trx_pt, brx_pt, trx_po, brx_po = self.load_data()
+        # trx_pt, brx_pt, trx_po, brx_po = self.load_data()
 
-        X = DataPrep.pt_x(trx_pt, brx_pt)
+        sw = Stopwatch(start=True)
 
-        y_label, y_value = DataPrep.po_y(trx_po, X)
+        X = self.pt_x()
 
-        X_pred = DataPrep.po_x(trx_po, brx_po)
+        y_label, y_value = self.po_y(margin_val=X[['marginCAD_sum_cart']], index_val=X.index)
+
+        X_pred = self.po_x()
 
         pres_cols = X.columns.intersection(X_pred.columns)
 
@@ -176,44 +208,62 @@ class DataPrep(object):
 
         X = X[pres_cols]
 
+        X = X.fillna(-9999)
+
         logger.info('Building train and test splits per each model...')
 
         # Build train and test sets
 
         indP = (y_value >= np.log1p(1))
 
-        X_clf_train, X_clf_test, y_clf_train, y_clf_test = train_test_split(
+        X_clf_train, X_clf_val, y_clf_train, y_clf_val = train_test_split(
             X, y_label, test_size=self.test_size, random_state=42, stratify=y_label)
 
         clf_train = pd.concat([y_clf_train, X_clf_train], axis=1)
-        clf_test = pd.concat([y_clf_test, X_clf_test], axis=1)
+        clf_val = pd.concat([y_clf_val, X_clf_val], axis=1)
 
-        logger.info('X_clf_train and X_clf_test shapes: {}, {}'.format(X_clf_train.shape, X_clf_test.shape))
-        logger.info('y_clf_train and y_clf_test shapes: {}, {}'.format(y_clf_train.shape, y_clf_test.shape))
+        logger.info('X_clf_train and X_clf_val shapes: {}, {}'.format(X_clf_train.shape, X_clf_val.shape))
+        logger.info('y_clf_train and y_clf_val shapes: {}, {}'.format(y_clf_train.shape, y_clf_val.shape))
 
         dump(clf_train, get_data_dir('clf_train.pkl'))
-        dump(clf_test, get_data_dir('clf_val.pkl'))
+        dump(clf_val, get_data_dir('clf_val.pkl'))
+
+        logger.info('Dumping csv files (classification model)...')
+        clf_train.to_csv(get_train_dir('clf_train.csv'), header=False, index=False)
+        clf_val.to_csv(get_val_dir('clf_val.csv'), header=False, index=False)
 
         X_reg_train = X[indP & X.index.isin(X_clf_train.index)]
-        X_reg_test = X[indP & X.index.isin(X_clf_test.index)]
+        X_reg_val = X[indP & X.index.isin(X_clf_val.index)]
 
         y_reg_train = y_value[indP & y_value.index.isin(y_clf_train.index)]
-        y_reg_test = y_value[indP & y_value.index.isin(y_clf_test.index)]
+        y_reg_val = y_value[indP & y_value.index.isin(y_clf_val.index)]
 
         reg_train = pd.concat([y_reg_train, X_reg_train], axis=1)
-        reg_test = pd.concat([y_reg_test, X_reg_test], axis=1)
+        reg_val = pd.concat([y_reg_val, X_reg_val], axis=1)
 
-        logger.info('X_reg_train and X_reg_test shapes: {}, {}'.format(X_reg_train.shape, X_reg_test.shape))
-        logger.info('y_reg_train and y_reg_test shapes: {}, {}'.format(y_reg_train.shape, y_reg_test.shape))
+        logger.info('X_reg_train and X_reg_val shapes: {}, {}'.format(X_reg_train.shape, X_reg_val.shape))
+        logger.info('y_reg_train and y_reg_val shapes: {}, {}'.format(y_reg_train.shape, y_reg_val.shape))
 
         dump(reg_train, get_data_dir('reg_train.pkl'))
-        dump(reg_test, get_data_dir('reg_val.pkl'))
+        dump(reg_val, get_data_dir('reg_val.pkl'))
+
+        logger.info('Dumping csv files (regression model)...')
+        reg_train.to_csv(get_train_dir('reg_train.csv'), header=False, index=False)
+        reg_val.to_csv(get_val_dir('reg_val.csv'), header=False, index=False)
 
         X_pred = X_pred[pres_cols]
 
+        X_pred = X_pred.fillna(-9999)
+
         dump(X_pred, get_data_dir('X_pred.pkl'))
 
+        self._push_to_s3(local_path=str(S3_DIR)+'/')
 
+        np.savetxt(get_data_dir('features.txt'), X_pred.columns.ravel(), fmt='%s')
+
+        logger.info('Elapsed time of preparing data: {}'.format(sw.elapsed.human_str()))
+
+        return float(np.sum(y_clf_train == 0)/np.sum(y_clf_train == 1))
 
 
 
