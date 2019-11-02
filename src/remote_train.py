@@ -1,6 +1,6 @@
 
 """
-@name: remote_model.py
+@name: remote_train.py
 
 @author: Mohammad Jeihoonian
 
@@ -9,13 +9,18 @@ Created on Oct 2019
 
 import boto3
 import botocore
+import datetime
 import logging
+import pandas as pd
+import numpy as np
 import sagemaker
 import shutil
 import xgboost as xgb
 from sagemaker.amazon.amazon_estimator import get_image_uri
 from sagemaker.estimator import Estimator
+from sklearn.metrics import f1_score, mean_squared_error
 from src.utils.db_engine import s3_aws_engine, get_aws_role
+from src.params.model_params import *
 from src.utils.path_helper import *
 from src.utils.resources import *
 from timeutils import Stopwatch
@@ -24,15 +29,14 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-class RemoteModel(object):
+class RemoteTrain(object):
 
-    def __init__(self, model_name, aws_env, params, imb_ratio):
+    def __init__(self, model_name, aws_env):
 
         self.model_name = model_name
         self.aws_env = aws_env
-        self.params = params
-        self.imb_ratio = imb_ratio
-        self.role = get_aws_role('ssense_role')
+        self.params = self.get_params()
+        self.role = self.get_role()
 
     @staticmethod
     def aws_s3_path(s3_bucket):
@@ -50,14 +54,23 @@ class RemoteModel(object):
 
         return boto3.Session(aws_access_key_id=id, aws_secret_access_key=secret, region_name='us-east-2')
 
-    @staticmethod
-    def fetch_pred_data(filename):
+    def get_imb_ratio(self):
+        if self.model_name == 'clf':
+            return load_param_json(get_params_dir('imb_ratio.py'))
+        else:
+            return None
 
-        logger.info('Fetching prediction data...')
+    def get_params(self):
+        if self.model_name == 'clf':
+            return CLF_PARAM
+        else:
+            return REG_PARAM
 
-        X_pred = load(get_data_dir(filename))
-
-        return xgb.DMatrix(data=X_pred.values)
+    def get_role(self):
+        if '-qa' in self.aws_env:
+            return get_aws_role('ssense-role-qa')
+        else:
+            return get_aws_role('ssense-role-prod')
 
     def fetch_data(self, s3_path):
 
@@ -109,21 +122,80 @@ class RemoteModel(object):
 
         model = load(get_model_dir(self.model_name + '-model'))
 
-        model.dump_model(str(get_model_dir(self.model_name + '_model.txt')))
+        # model.dump_model(str(get_model_dir(self.model_name + '_model.txt')))
 
         return model
+
+    def fetch_data_val(self, var):
+
+        logger.info('Fetching validation data...')
+
+        val_df = load(get_data_dir(self.model_name + '_val.pkl'))
+        X_val = val_df.drop(columns=var, axis=1).values
+        y_val = val_df[var].values
+
+        return X_val, y_val
+
+    def val_fit(self, X_val, y_val):
+
+        logger.info('Fitting the trained model on validation data...')
+
+        model = self.load_model()
+
+        d_val = xgb.DMatrix(data=X_val, label=y_val)
+
+        if self.model_name == 'clf':
+            y_est = model.predict(d_val)
+            return np.where(y_est >= 0.5, 1, 0)
+        else:
+            return model.predict(d_val)
+
+    def val_metric(self, y_val, y_est):
+
+        logger.info('Calculating the evaluation metric...')
+
+        timestamp = datetime.date.today().strftime('%Y-%m-%d')
+
+        if self.model_name == 'clf':
+            score = f1_score(y_val, y_est)
+            logger.info('F1 score: {}'.format(score))
+            metric_name = 'f1'
+        else:
+            score = np.sqrt(mean_squared_error(y_val, y_est))
+            logger.info('RMSE score: {}'.format(score))
+            metric_name = 'rmse'
+
+        score_df = pd.DataFrame({'timestamp': [timestamp], 'metric_name': [metric_name],
+                                 'value': [score]})
+
+        score_df.to_csv(get_model_dir(self.model_name + '_metrics.csv'), index=False)
+
+        return score
+
+    def validation(self):
+
+        logger.info('Validating the trained model...')
+
+        if self.model_name == 'clf':
+            X_val, y_val = self.fetch_data_val('LTV_active')
+        else:
+            X_val, y_val = self.fetch_data_val('LTV_52W')
+
+        y_est = self.val_fit(X_val, y_val)
+
+        self.val_metric(y_val, y_est)
 
     def train(self):
 
         s3_bucket, id, secret = s3_aws_engine(name=self.aws_env)
 
-        s3_path = RemoteModel.aws_s3_path(s3_bucket)
+        s3_path = RemoteTrain.aws_s3_path(s3_bucket)
 
-        boto_sess = RemoteModel.boto_session(id, secret)
+        boto_sess = RemoteTrain.boto_session(id, secret)
 
         logger.info('Getting algorithm image URI...')
 
-        container = get_image_uri(boto_sess.region_name, 'xgboost')
+        container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
 
         logger.info('Creating sagemaker session...')
 
@@ -146,7 +218,7 @@ class RemoteModel(object):
         est.set_hyperparameters(**self.params)
 
         if self.model_name == 'clf':
-            est.set_hyperparameters(scale_pos_weight=self.imb_ratio)
+            est.set_hyperparameters(scale_pos_weight=self.get_imb_ratio()['imb_ratio'])
 
         if est.hyperparam_dict is None:
             raise ValueError('Hyper-parameters are missing')
@@ -157,7 +229,8 @@ class RemoteModel(object):
 
         est.fit({'train': s3_input_train, 'validation': s3_input_val})
 
-        est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_metrics.csv'))
+        # The following method is inconsistent with newer version of xgboost
+        # est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_metrics.csv'))
 
         logger.info('Elapsed time of training: {}'.format(sw.elapsed.human_str()))
 
@@ -167,12 +240,4 @@ class RemoteModel(object):
 
         self.extract_model()
 
-    def predict(self):
-
-        dpred = RemoteModel.fetch_pred_data(filename='X_pred.pkl')
-
-        model = self.load_model()
-
-        y_pred = model.predict(dpred)
-
-        return y_pred
+        self.validation()

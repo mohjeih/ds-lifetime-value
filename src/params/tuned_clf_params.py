@@ -1,1 +1,1 @@
-{"clfParams": {"num_round": 19.0}}
+{"clf_params": {"num_round": 19.0}}

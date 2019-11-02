@@ -65,3 +65,20 @@ def dump_param_json(obj, filename):
         raise ValueError("Failed to dump the desired file")
 
 
+def load_param_json(filename):
+    """
+
+    Load input parameters
+
+    :param filename
+    :return params
+    """
+
+    try:
+        with filename.open('r') as file:
+            params = json.load(file)
+        return params
+    except Exception:
+        raise ValueError("Failed to load the desired file")
+
+

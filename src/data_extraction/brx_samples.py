@@ -19,12 +19,11 @@ class BrxSamples(BigQueryConnector):
 
     """
 
-    def __init__(self, dataset_id, ext,
+    def __init__(self, dataset_id,
                  table_id, colnames):
         super().__init__(dataset_id)
         self.table_id = table_id
         self.colnames = colnames
-        self.ext = ext
 
     def query(self):
         return (get_query('brx_samples.sql')

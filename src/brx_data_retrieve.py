@@ -99,7 +99,7 @@ class BrxRet(DataRet):
 
     def brx_feat_agg(self, table_id):
 
-        logger.info('Aggregating all features at visitor level... ')
+        logger.info('Aggregating all features at ID level... ')
 
         brx_feat = BrxFeat(self.dataset_id, self.ext, table_id=table_id, colnames='*')
 
@@ -109,7 +109,7 @@ class BrxRet(DataRet):
 
         logger.info('Sampling features at visitor level... ')
 
-        brx_samples = BrxSamples(self.dataset_id, self.ext, table_id=table_id, colnames='*')
+        brx_samples = BrxSamples(self.dataset_id, table_id=table_id, colnames='*')
 
         brx_samples.run()
 
@@ -128,15 +128,13 @@ class BrxRet(DataRet):
 
     def ret(self):
 
-        if self.ext:
+        self.pd_ext(table_id='_products')
 
-            self.pd_ext(table_id='_products')
+        self.em_ext(table_id='_employees')
 
-            self.em_ext(table_id='_employees')
+        self.ad_ext(table_id='_adwords')
 
-            self.ad_ext(table_id='_adwords')
-
-            self.aud_ext(table_id='_audiences')
+        self.aud_ext(table_id='_audiences')
 
         self.md_ext(table_id='_markdown', bq=True)
 
@@ -163,16 +161,6 @@ class BrxRet(DataRet):
         else:
 
             dataset = self.sync(table_id='_brx_features')
-
-        # delete_table(self.dataset_id, table_id=['_adwords', '_audiences', '_employees', '_invoices',
-        #                                         '_markdown', '_page_features', '_page_raw', '_pdp_features',
-        #                                         '_products', '_session_features', '_session_raw_agg',
-        #                                         '_session_raw_agg', '_users'])
-
-        # if self.ext:
-            # delete_table(self.dataset_id, table_id=['_invoices'])
-        # else:
-            # delete_table(self.dataset_id, table_id=['_invoices_po'])
 
         dataset.reset_index(inplace=True, drop=True)
 

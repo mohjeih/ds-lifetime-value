@@ -7,6 +7,9 @@
 Created on Oct 2019
 """
 
+# USAGE
+# python main.py --aws_env ssense-cltv-qa --model clf
+
 import argparse
 import boto3
 import logging
@@ -15,7 +18,7 @@ from pprint import pprint
 from sagemaker.amazon.amazon_estimator import get_image_uri
 from sagemaker.estimator import Estimator
 from sagemaker.tuner import IntegerParameter, ContinuousParameter, HyperparameterTuner
-from src.main import DataExt
+from src.etl import DataExt
 from src.utils.db_engine import s3_aws_engine, get_aws_role
 from src.utils.path_helper import *
 from src.utils.resources import *
@@ -27,12 +30,11 @@ logger = logging.getLogger(__name__)
 
 class ModelTune(object):
 
-    def __init__(self, model_name, aws_env, imb_ratio):
+    def __init__(self, model_name, aws_env):
 
         self.model_name = model_name
         self.aws_env = aws_env
-        self.imb_ratio = imb_ratio
-        self.role = get_aws_role('ssense_role')
+        self.role = self.get_role()
 
     @staticmethod
     def aws_s3_path(s3_bucket):
@@ -48,6 +50,16 @@ class ModelTune(object):
         logger.info('Creating boto session...')
 
         return boto3.Session(aws_access_key_id=id, aws_secret_access_key=secret, region_name='us-east-2')
+
+    def get_imb_ratio(self):
+        if self.model_name == 'clf':
+            return load_param_json(get_params_dir('imb_ratio.py'))
+
+    def get_role(self):
+        if '-qa' in self.aws_env:
+            return get_aws_role('ssense-role-qa')
+        else:
+            return get_aws_role('ssense-role-prod')
 
     def fetch_data(self, s3_path):
 
@@ -73,7 +85,7 @@ class ModelTune(object):
 
         tuner_df.sort_values(by='FinalObjectiveValue', ascending=True, inplace=True)
 
-        tuner_df.to_csv(get_params_dir(self.model_name + '_tuner_df.csv'), index=False)
+        tuner_df.to_csv(get_model_dir(self.model_name + '_tuner_df.csv'), index=False)
 
         logger.info('The objective is to {}: {}'.format(
             tuning_job_res['HyperParameterTuningJobConfig']['HyperParameterTuningJobObjective']['Type'],
@@ -83,10 +95,10 @@ class ModelTune(object):
             pprint(tuning_job_res['BestTrainingJob'])
 
         tuned_dict = dict()
-        tuned_dict[self.model_name + 'Params'] = {key: float(val) for key, val in
+        tuned_dict[self.model_name + '_params'] = {key: float(val) for key, val in
                                                   tuning_job_res['BestTrainingJob']['TunedHyperParameters'].items()}
 
-        logger.info('Best values'.format(tuned_dict))
+        logger.info('Best values: {}'.format(tuned_dict))
 
         dump_param_json(tuned_dict, get_params_dir('tuned_' + self.model_name + '_params.py'))
 
@@ -120,20 +132,20 @@ class ModelTune(object):
 
         logger.info('Setting hyper-parameters...')
 
-        hyperparameter_ranges = {'num_round': IntegerParameter(1, 4000),
-                                 'eta': ContinuousParameter(0, 0.5),
-                                 'max_depth': IntegerParameter(1, 10),
-                                 'min_child_weight': ContinuousParameter(0, 120),
-                                 'subsample': ContinuousParameter(0.5, 1),
-                                 'colsample_bytree': ContinuousParameter(0.5, 1),
-                                 'gamma': ContinuousParameter(0, 5),
-                                 'lambda': ContinuousParameter(0, 1000),
-                                 'alpha': ContinuousParameter(0, 1000)
+        hyperparameter_ranges = {'num_round': IntegerParameter(1, 20), #4000
+                                 # 'eta': ContinuousParameter(0, 0.5),
+                                 # 'max_depth': IntegerParameter(1, 10),
+                                 # 'min_child_weight': ContinuousParameter(0, 120),
+                                 # 'subsample': ContinuousParameter(0.5, 1),
+                                 # 'colsample_bytree': ContinuousParameter(0.5, 1),
+                                 # 'gamma': ContinuousParameter(0, 5),
+                                 # 'lambda': ContinuousParameter(0, 1000),
+                                 # 'alpha': ContinuousParameter(0, 1000)
                                  }
 
         if self.model_name == 'clf':
             est.set_hyperparameters(objective='reg:logistic',
-                                    scale_pos_weight=self.imb_ratio)
+                                    scale_pos_weight=self.get_imb_ratio()['imb_ratio'])
             objective_metric_name = 'validation:f1'
             objective_type = 'Maximize'
         else:
@@ -150,7 +162,7 @@ class ModelTune(object):
                                     objective_metric_name=objective_metric_name,
                                     hyperparameter_ranges=hyperparameter_ranges,
                                     objective_type=objective_type,
-                                    max_jobs=20,
+                                    max_jobs=20, # 100
                                     max_parallel_jobs=10)
 
         sw = Stopwatch(start=True)
@@ -171,8 +183,11 @@ def get_args():
     parser = argparse.ArgumentParser(description="Executing hyper-parameters tuning",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument('--last_n_weeks', action='store', help="The number of weeks", dest='last_n_weeks', type=int,
+                        default=52)
+
     parser.add_argument('--aws_env', action='store', help="AWS environment", dest='aws_env', type=str,
-                        default='ssense-recommendation-prod')  # ssense-cltv-qa
+                        default='ssense-cltv-qa')
 
     parser.add_argument('--model', action='store', help="Name of model", dest='model', type=str,
                         default='clf')
@@ -186,11 +201,11 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    # data_ext = DataExt(last_n_weeks=52, aws_env=args.aws_env)
-    #
-    # imb_ratio = data_ext.extract_transform_load()
+    data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
 
-    ml_tune = ModelTune(model_name=args.model, imb_ratio=40.9, aws_env=args.aws_env)
+    data_ext.extract_transform_load()
+
+    ml_tune = ModelTune(model_name=args.model, aws_env=args.aws_env)
 
     ml_tune.tuning()
 
