@@ -30,7 +30,7 @@ class ProductQuery(GenericDataClass):
         """
         super().__init__(
             ConnectorSQL('ssense'),
-            QUERY_DIR / 'Products.sql',
+            QUERY_DIR / 'products.sql',
             {'@colnames': colnames},
             cols_list
         )
