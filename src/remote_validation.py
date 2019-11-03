@@ -53,7 +53,7 @@ class ModelTune(object):
 
     def _get_imb_ratio(self):
         if self.model_name == 'clf':
-            return load_param_json(get_params_dir('imb_ratio.py'))
+            return load_param_json(get_params_dir('imb_ratio.json'))
 
     def _get_role(self):
         if '-qa' in self.aws_env:

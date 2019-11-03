@@ -220,7 +220,7 @@ class DataPrep(object):
             param_dict = dict()
             param_dict['imb_ratio'] = imb_ratio
 
-            dump_param_json(param_dict, get_params_dir('imb_ratio.py'))
+            dump_param_json(param_dict, get_params_dir('imb_ratio.json'))
 
             logger.info('The balance of positive and negative rates: {}'.format(param_dict['imb_ratio']))
 
