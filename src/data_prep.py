@@ -95,7 +95,7 @@ class DataPrep(object):
 
         brx_trx_pt[ind] = brx_trx_pt[ind].apply(np.log1p)
 
-        logger.info('X shape: {}'.format(brx_trx_pt.shape))
+        logger.info('brx_trx_pt shape: {}'.format(brx_trx_pt.shape))
 
         return brx_trx_pt
 
@@ -170,7 +170,7 @@ class DataPrep(object):
 
         brx_trx_po[ind] = brx_trx_po[ind].apply(np.log1p)
 
-        logger.info('X_pred shape: {}'.format(brx_trx_po.shape))
+        logger.info('brx_trx_po shape: {}'.format(brx_trx_po.shape))
 
         return brx_trx_po
 
@@ -198,6 +198,8 @@ class DataPrep(object):
             X = X[pres_cols]
 
             X = X.fillna(-9999)
+
+            logger.info('X shape: {}'.format(X.shape))
 
             np.savetxt(get_data_dir('features.txt'), X.columns.ravel(), fmt='%s')
 
@@ -258,6 +260,8 @@ class DataPrep(object):
         X_pred = X_pred[pres_cols]
 
         X_pred = X_pred.fillna(-9999)
+
+        logger.info('X_pred shape: {}'.format(X_pred.shape))
 
         dump(X_pred, get_data_dir('X_pred.pkl'))
 

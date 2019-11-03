@@ -8,7 +8,7 @@ Created on Oct 2019
 """
 
 # USAGE
-# python main.py --last_n_weeks 52 --aws_env ssense-cltv-qa --clf_model clf --reg_model reg --calib calib
+# python main.py --last_n_weeks 52 --aws_env ssense-cltv-qa --clf_model clf --reg_model reg
 
 import argparse
 import logging
@@ -42,8 +42,7 @@ def get_args():
     parser.add_argument('--reg_model', action='store', help="Name of regressor", dest='reg_model', type=str,
                         default='reg')
 
-    parser.add_argument('--calib', action='store', help="Calibration", dest='calib', type=bool,
-                        default=True)
+    parser.add_argument('--calib', action='store_true', help="Calibration", dest='calib')
 
     return parser.parse_args()
 
