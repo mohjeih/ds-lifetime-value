@@ -19,10 +19,11 @@ QUERY_DIR = RESOURCES_DIR / 'queries'
 
 SRC_DIR = ROOT_DIR / 'src'
 
-PARAMS_DIR = SRC_DIR / 'params'
-
 TARGET_DIR = ROOT_DIR / 'target'
 TARGET_DIR.mkdir(parents=True, exist_ok=True)
+
+PARAMS_DIR = TARGET_DIR / 'params'
+PARAMS_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL_DIR = TARGET_DIR / 'model'
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
