@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     ml_pred = LocalPred(model_name=args.clf_model)
 
-    y_pred_prob = ml_pred.predict()
+    y_prob = ml_pred.predict()
 
     ml_pred = LocalPred(model_name=args.reg_model)
 

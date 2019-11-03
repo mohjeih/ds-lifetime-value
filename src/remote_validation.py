@@ -34,10 +34,10 @@ class ModelTune(object):
 
         self.model_name = model_name
         self.aws_env = aws_env
-        self.role = self.get_role()
+        self.role = self._get_role()
 
     @staticmethod
-    def aws_s3_path(s3_bucket):
+    def _aws_s3_path(s3_bucket):
         logger.info('Getting S3 bucket path...')
 
         s3_bucket_path = s3_bucket + '/'
@@ -45,17 +45,17 @@ class ModelTune(object):
         return 's3://' + s3_bucket_path
 
     @staticmethod
-    def boto_session(id, secret):
+    def _boto_session(id, secret):
 
         logger.info('Creating boto session...')
 
         return boto3.Session(aws_access_key_id=id, aws_secret_access_key=secret, region_name='us-east-2')
 
-    def get_imb_ratio(self):
+    def _get_imb_ratio(self):
         if self.model_name == 'clf':
             return load_param_json(get_params_dir('imb_ratio.py'))
 
-    def get_role(self):
+    def _get_role(self):
         if '-qa' in self.aws_env:
             return get_aws_role('ssense-role-qa')
         else:
@@ -106,9 +106,9 @@ class ModelTune(object):
 
         s3_bucket, id, secret = s3_aws_engine(name=self.aws_env)
 
-        s3_path = ModelTune.aws_s3_path(s3_bucket)
+        s3_path = ModelTune._aws_s3_path(s3_bucket)
 
-        boto_sess = ModelTune.boto_session(id, secret)
+        boto_sess = ModelTune._boto_session(id, secret)
 
         logger.info('Getting algorithm image URI...')
 
@@ -132,20 +132,20 @@ class ModelTune(object):
 
         logger.info('Setting hyper-parameters...')
 
-        hyperparameter_ranges = {'num_round': IntegerParameter(1, 20), #4000
-                                 # 'eta': ContinuousParameter(0, 0.5),
-                                 # 'max_depth': IntegerParameter(1, 10),
-                                 # 'min_child_weight': ContinuousParameter(0, 120),
-                                 # 'subsample': ContinuousParameter(0.5, 1),
-                                 # 'colsample_bytree': ContinuousParameter(0.5, 1),
-                                 # 'gamma': ContinuousParameter(0, 5),
-                                 # 'lambda': ContinuousParameter(0, 1000),
-                                 # 'alpha': ContinuousParameter(0, 1000)
+        hyperparameter_ranges = {'num_round': IntegerParameter(1, 4000),
+                                 'eta': ContinuousParameter(0, 0.5),
+                                 'max_depth': IntegerParameter(1, 10),
+                                 'min_child_weight': ContinuousParameter(0, 120),
+                                 'subsample': ContinuousParameter(0.5, 1),
+                                 'colsample_bytree': ContinuousParameter(0.5, 1),
+                                 'gamma': ContinuousParameter(0, 5),
+                                 'lambda': ContinuousParameter(0, 1000),
+                                 'alpha': ContinuousParameter(0, 1000)
                                  }
 
         if self.model_name == 'clf':
             est.set_hyperparameters(objective='reg:logistic',
-                                    scale_pos_weight=self.get_imb_ratio()['imb_ratio'])
+                                    scale_pos_weight=self._get_imb_ratio()['imb_ratio'])
             objective_metric_name = 'validation:f1'
             objective_type = 'Maximize'
         else:
@@ -162,8 +162,8 @@ class ModelTune(object):
                                     objective_metric_name=objective_metric_name,
                                     hyperparameter_ranges=hyperparameter_ranges,
                                     objective_type=objective_type,
-                                    max_jobs=20, # 100
-                                    max_parallel_jobs=10)
+                                    max_jobs=200,
+                                    max_parallel_jobs=20)
 
         sw = Stopwatch(start=True)
 

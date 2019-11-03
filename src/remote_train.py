@@ -36,10 +36,10 @@ class RemoteTrain(object):
         self.model_name = model_name
         self.aws_env = aws_env
         self.params = self.get_params()
-        self.role = self.get_role()
+        self.role = self._get_role()
 
     @staticmethod
-    def aws_s3_path(s3_bucket):
+    def _aws_s3_path(s3_bucket):
 
         logger.info('Getting S3 bucket path...')
 
@@ -48,13 +48,13 @@ class RemoteTrain(object):
         return 's3://' + s3_bucket_path
 
     @staticmethod
-    def boto_session(id, secret):
+    def _boto_session(id, secret):
 
         logger.info('Creating boto session...')
 
         return boto3.Session(aws_access_key_id=id, aws_secret_access_key=secret, region_name='us-east-2')
 
-    def get_imb_ratio(self):
+    def _get_imb_ratio(self):
         if self.model_name == 'clf':
             return load_param_json(get_params_dir('imb_ratio.py'))
         else:
@@ -66,7 +66,7 @@ class RemoteTrain(object):
         else:
             return REG_PARAM
 
-    def get_role(self):
+    def _get_role(self):
         if '-qa' in self.aws_env:
             return get_aws_role('ssense-role-qa')
         else:
@@ -172,7 +172,7 @@ class RemoteTrain(object):
 
         return score
 
-    def validation(self):
+    def _validation(self):
 
         logger.info('Validating the trained model...')
 
@@ -189,9 +189,9 @@ class RemoteTrain(object):
 
         s3_bucket, id, secret = s3_aws_engine(name=self.aws_env)
 
-        s3_path = RemoteTrain.aws_s3_path(s3_bucket)
+        s3_path = RemoteTrain._aws_s3_path(s3_bucket)
 
-        boto_sess = RemoteTrain.boto_session(id, secret)
+        boto_sess = RemoteTrain._boto_session(id, secret)
 
         logger.info('Getting algorithm image URI...')
 
@@ -218,7 +218,7 @@ class RemoteTrain(object):
         est.set_hyperparameters(**self.params)
 
         if self.model_name == 'clf':
-            est.set_hyperparameters(scale_pos_weight=self.get_imb_ratio()['imb_ratio'])
+            est.set_hyperparameters(scale_pos_weight=self._get_imb_ratio()['imb_ratio'])
 
         if est.hyperparam_dict is None:
             raise ValueError('Hyper-parameters are missing')
@@ -230,7 +230,10 @@ class RemoteTrain(object):
         est.fit({'train': s3_input_train, 'validation': s3_input_val})
 
         # The following method is inconsistent with newer version of xgboost
-        # est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_metrics.csv'))
+        try:
+            est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_aws_metrics.csv'))
+        except:
+            pass
 
         logger.info('Elapsed time of training: {}'.format(sw.elapsed.human_str()))
 
@@ -240,4 +243,4 @@ class RemoteTrain(object):
 
         self.extract_model()
 
-        self.validation()
+        self._validation()
