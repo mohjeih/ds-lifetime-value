@@ -29,7 +29,7 @@ def delete_table(dataset_id: str, table_id):
         raise ValueError('Desired table does not exist')
 
 
-def export_pandas_to_table(dataset_id, table_id, dataset, if_exists='replace'):
+def export_pandas_to_table(dataset_id, table_id, dataset, project_id, if_exists='replace'):
     """
 
     Write dataframe to bigquery
@@ -38,7 +38,7 @@ def export_pandas_to_table(dataset_id, table_id, dataset, if_exists='replace'):
     :param: if_exists: behavior when the destination table exists
     """
 
-    dataset.to_gbq(dataset_id+'.'+table_id, if_exists=if_exists)
+    dataset.to_gbq(destination_table=dataset_id+'.'+table_id, project_id=project_id, if_exists=if_exists)
 
 
 def remove_file_from_google_storage(bucket_name: str, prefix: str):
