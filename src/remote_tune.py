@@ -176,7 +176,7 @@ class ModelTune(object):
 
 def get_args():
     """
-    Call input arguments
+    Get input arguments
 
     """
 
@@ -190,7 +190,7 @@ def get_args():
                         default='ssense-cltv-qa')
 
     parser.add_argument('--model', action='store', help="Name of model", dest='model', type=str,
-                        default='clf')
+                        default='reg')
 
     return parser.parse_args()
 
