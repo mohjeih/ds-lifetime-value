@@ -162,8 +162,8 @@ class ModelTune(object):
                                     objective_metric_name=objective_metric_name,
                                     hyperparameter_ranges=hyperparameter_ranges,
                                     objective_type=objective_type,
-                                    max_jobs=200,
-                                    max_parallel_jobs=20)
+                                    max_jobs=100,
+                                    max_parallel_jobs=10)
 
         sw = Stopwatch(start=True)
 
