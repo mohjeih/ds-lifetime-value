@@ -144,11 +144,12 @@ class RemoteTrain(object):
 
         d_val = xgb.DMatrix(data=X_val, label=y_val)
 
+        y_est = model.predict(d_val)
+
         if self.model_name == 'clf':
-            y_est = model.predict(d_val)
             return np.where(y_est >= 0.5, 1, 0)
         else:
-            return model.predict(d_val)
+            return y_est
 
     def val_metric(self, y_val, y_est):
 
@@ -169,8 +170,6 @@ class RemoteTrain(object):
                                  'value': [score]})
 
         score_df.to_csv(get_model_dir(self.model_name + '_metrics.csv'), index=False)
-
-        return score
 
     def _validation(self):
 
