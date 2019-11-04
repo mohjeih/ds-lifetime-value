@@ -1,7 +1,7 @@
 
 CLF_PARAM = {}
 
-REG_PARAM = {"alpha": 63.248582003413226, "colsample_bytree": 0.5057430645998385, "eta": 0.04123142824359815,
-             "gamma": 0.39845336722742813, "lambda": 897.7213385729086, "max_depth": 6,
-             "min_child_weight": 8.427160657897472, "num_round": 536, "subsample": 0.9246667410132207,
+REG_PARAM = {"alpha": 0.0, "colsample_bytree": 0.6665794944165747, "eta": 0.0928654950989165,
+             "gamma": 0.17061310760525863, "lambda": 239.9301536186016, "max_depth": 1,
+             "min_child_weight": 74.66140642256886, "num_round": 1881, "subsample": 0.9637962713016603,
              "objective": "reg:linear", "eval_metric": "rmse"}

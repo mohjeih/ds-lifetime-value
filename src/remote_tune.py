@@ -100,7 +100,7 @@ class ModelTune(object):
 
         logger.info('Best values: {}'.format(tuned_dict))
 
-        dump_param_json(tuned_dict, get_params_dir('tuned_' + self.model_name + '_params.py'))
+        dump_param_json(tuned_dict, get_params_dir('tuned_' + self.model_name + '_params.json'))
 
     def tuning(self):
 
