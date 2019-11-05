@@ -122,10 +122,15 @@ class ModelTune(object):
 
         logger.info('Creating sagemaker estimator to train using the supplied {} model...'.format(self.model_name))
 
+        if self.model_name == 'clf':
+            train_instance_type = 'ml.m5.4xlarge'
+        else:
+            train_instance_type = 'ml.m5.2xlarge'
+
         est = Estimator(container,
                         role=self.role,
                         train_instance_count=1,
-                        train_instance_type='ml.m5.2xlarge',
+                        train_instance_type=train_instance_type,
                         output_path=s3_path + 'tuning_' + self.model_name + '/',
                         sagemaker_session=sage_sess,
                         base_job_name=self.model_name + '-tuning-job')
