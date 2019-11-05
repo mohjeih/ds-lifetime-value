@@ -1,6 +1,6 @@
 
 """
-@name: main.py
+@name: remote_tune.py
 
 @author: Mohammad Jeihoonian
 
@@ -8,7 +8,7 @@ Created on Oct 2019
 """
 
 # USAGE
-# python main.py --aws_env ssense-cltv-qa --model clf
+# python remote_tune.py --aws_env ssense-cltv-qa --model reg
 
 import argparse
 import boto3
