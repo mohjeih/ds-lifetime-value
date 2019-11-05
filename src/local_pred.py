@@ -45,6 +45,10 @@ class LocalPred(object):
 
         model = self.load_model()
 
+        logger.info('Prediction...')
+
         y_pred = model.predict(dpred)
+
+        logger.info('y_pred shape: {}'.format(y_pred.shape[0]))
 
         return y_pred
