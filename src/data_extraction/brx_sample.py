@@ -26,7 +26,7 @@ class BrxSamples(BigQueryConnector):
         self.colnames = colnames
 
     def query(self):
-        return (get_query('brx_samples.sql')
+        return (get_query('brx_sample.sql')
                 .open()
                 .read()
                 .replace('@colnames', self.colnames)

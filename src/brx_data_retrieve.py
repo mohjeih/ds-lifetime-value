@@ -12,12 +12,13 @@ from src.data_extraction.session_agg import SessionRaw
 from src.data_extraction.session_agg_md import SessionMd
 from src.data_extraction.audiences import AudRaw
 from src.data_extraction.adwords import AdRaw
+from src.data_extraction.ad_users import AdUsers
 from src.data_extraction.page_raw import PageRaw
 from src.data_extraction.page_features import PageFeat
 from src.data_extraction.pdp_features import PdpFeat
 from src.data_extraction.session_features import SessionFeat
 from src.data_extraction.brx_features import BrxFeat
-from src.data_extraction.brx_samples import BrxSamples
+from src.data_extraction.brx_sample import BrxSamples
 from src.utils.bq_helper import *
 
 
@@ -37,7 +38,7 @@ class BrxRet(DataRet):
 
     def aud_ext(self, table_id):
 
-        logger.info('Extracting audiences... ')
+        logger.info('Extracting audiences...')
 
         aud_raw = AudRaw(self.dataset_id, table_id=table_id, colnames='*')
 
@@ -45,7 +46,7 @@ class BrxRet(DataRet):
 
     def session_ext(self, table_id):
 
-        logger.info('Extracting session history while removing overnight ones... ')
+        logger.info('Extracting session history while removing overnight ones...')
 
         session_raw = SessionRaw(self.dataset_id, self.start_date, self.end_date,
                                  table_id=table_id, colnames='*')
@@ -54,7 +55,7 @@ class BrxRet(DataRet):
 
     def session_md_ext(self, table_id):
 
-        logger.info('Integrating session history with markdown info... ')
+        logger.info('Integrating session history with markdown info...')
 
         session_md = SessionMd(self.dataset_id, self.ext, self.start_date, self.end_date,
                                table_id=table_id, colnames='*')
@@ -63,7 +64,7 @@ class BrxRet(DataRet):
 
     def page_ext(self, table_id):
 
-        logger.info('Extracting page history... ')
+        logger.info('Extracting page history...')
 
         page_raw = PageRaw(self.dataset_id, self.start_date, self.end_date,
                            table_id=table_id, colnames='*')
@@ -72,7 +73,7 @@ class BrxRet(DataRet):
 
     def page_feat_ext(self, table_id):
 
-        logger.info('Generating page related features... ')
+        logger.info('Generating page related features...')
 
         page_feat = PageFeat(self.dataset_id, self.start_date, self.end_date,
                              table_id=table_id, colnames='*')
@@ -81,7 +82,7 @@ class BrxRet(DataRet):
 
     def pdp_feat_ext(self, table_id):
 
-        logger.info('Generating pdp related features... ')
+        logger.info('Generating pdp related features...')
 
         pdp_feat = PdpFeat(self.dataset_id, self.start_date, self.end_date,
                            table_id=table_id, colnames='*')
@@ -90,7 +91,7 @@ class BrxRet(DataRet):
 
     def session_feat_ext(self, table_id):
 
-        logger.info('Generating session related features... ')
+        logger.info('Generating session related features...')
 
         session_feat = SessionFeat(self.dataset_id, self.start_date, self.end_date,
                                    table_id=table_id, colnames='*')
@@ -99,7 +100,7 @@ class BrxRet(DataRet):
 
     def brx_feat_agg(self, table_id):
 
-        logger.info('Aggregating all features at ID level... ')
+        logger.info('Aggregating all features at ID level...')
 
         brx_feat = BrxFeat(self.dataset_id, self.ext, table_id=table_id, colnames='*')
 
@@ -107,15 +108,23 @@ class BrxRet(DataRet):
 
     def brx_feat_samples(self, table_id):
 
-        logger.info('Sampling features at visitor level... ')
+        logger.info('Sampling features at visitor level...')
 
         brx_samples = BrxSamples(self.dataset_id, table_id=table_id, colnames='*')
 
         brx_samples.run()
 
+    def ad_users_ext(self, table_id):
+
+        logger.info('Extracting users and ads related data...')
+
+        ad_users = AdUsers(self.dataset_id, self.ext, table_id=table_id, colnames='*')
+
+        ad_users.run()
+
     def sync(self, table_id):
 
-        logger.info('Downloading features at visitor level... ')
+        logger.info('Downloading data from {}...'.format(table_id))
 
         remove_file_from_google_storage(bucket_name=self.bucket_name, prefix=self.prefix)
 
@@ -150,23 +159,37 @@ class BrxRet(DataRet):
 
         self.session_feat_ext(table_id='_session_features')
 
-        self.brx_feat_agg(table_id='_brx_features')
-
         if self.ext:
+
+            self.brx_feat_agg(table_id='_brx_features_pt')
 
             self.brx_feat_samples(table_id='_brx_sample')
 
-            dataset = self.sync(table_id='_brx_sample')
+            self.ad_users_ext(table_id='_ad_users_pt')
+
+            brx_dataset = self.sync(table_id='_brx_sample')
+
+            ads_dataset = self.sync(table_id='_ad_users_pt')
 
         else:
 
-            dataset = self.sync(table_id='_brx_features')
+            self.brx_feat_agg(table_id='_brx_features_po')
 
-        dataset.reset_index(inplace=True, drop=True)
+            self.ad_users_ext(table_id='_ad_users_po')
 
-        logger.info('Shape of brx data: {}'.format(dataset.shape))
+            brx_dataset = self.sync(table_id='_brx_features_po')
 
-        return dataset
+            ads_dataset = self.sync(table_id='_ad_users_po')
+
+        brx_dataset.reset_index(inplace=True, drop=True)
+
+        ads_dataset.reset_index(inplace=True, drop=True)
+
+        logger.info('Shape of brx data: {}'.format(brx_dataset.shape))
+
+        logger.info('Shape of ads data: {}'.format(ads_dataset.shape))
+
+        return brx_dataset, ads_dataset
 
 
 

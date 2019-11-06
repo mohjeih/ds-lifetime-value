@@ -25,14 +25,29 @@ logger = logging.getLogger(__name__)
 
 class DataPrep(object):
 
-    def __init__(self, trx_pt, brx_pt, trx_po, brx_po, test_size, aws_env):
+    def __init__(self, trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, test_size, aws_env):
 
         self.trx_pt = trx_pt
         self.brx_pt = brx_pt
+        self.ads_pt = ads_pt
         self.trx_po = trx_po
         self.brx_po = brx_po
+        self.ads_po = ads_po
         self.test_size = test_size
         self.aws_env = aws_env
+
+    @staticmethod
+    def dump_data(dataset, filename, pkl_format=True, train_dir=True):
+
+        logger.info('Dumping {}...'.format(filename))
+
+        if pkl_format:
+            dump(dataset, get_data_dir(filename))
+        else:
+            if train_dir:
+                dataset.to_csv(get_train_dir(filename), header=False, index=False)
+            else:
+                dataset.to_csv(get_val_dir(filename), header=False, index=False)
 
     def _push_to_s3(self, local_path=str(S3_DIR)+'/'):
         """
@@ -183,7 +198,7 @@ class DataPrep(object):
         if not calib:
             pres_cols = load(get_data_dir('features.pkl'))
         else:
-            pres_cols = list()
+            pres_cols = np.zeros(shape=X_pred.shape[1])
 
         if calib:
 
@@ -203,7 +218,7 @@ class DataPrep(object):
 
             np.savetxt(get_data_dir('features.txt'), X.columns.ravel(), fmt='%s')
 
-            dump(X.columns.ravel(), get_data_dir('features.pkl'))
+            DataPrep.dump_data(X.columns.ravel(), 'features.pkl')
 
             logger.info('Building train and test splits per each model...')
 
@@ -229,12 +244,11 @@ class DataPrep(object):
             logger.info('X_clf_train and X_clf_val shapes: {}, {}'.format(X_clf_train.shape, X_clf_val.shape))
             logger.info('y_clf_train and y_clf_val shapes: {}, {}'.format(y_clf_train.shape, y_clf_val.shape))
 
-            dump(clf_train, get_data_dir('clf_train.pkl'))
-            dump(clf_val, get_data_dir('clf_val.pkl'))
+            DataPrep.dump_data(clf_train, 'clf_train.pkl')
+            DataPrep.dump_data(clf_val, 'clf_val.pkl')
 
-            logger.info('Dumping csv files (classification model)...')
-            clf_train.to_csv(get_train_dir('clf_train.csv'), header=False, index=False)
-            clf_val.to_csv(get_val_dir('clf_val.csv'), header=False, index=False)
+            DataPrep.dump_data(clf_train, 'clf_train.csv', pkl_format=False)
+            DataPrep.dump_data(clf_val, 'clf_val.csv', pkl_format=False, train_dir=False)
 
             X_reg_train = X[indP & X.index.isin(X_clf_train.index)]
             X_reg_val = X[indP & X.index.isin(X_clf_val.index)]
@@ -248,14 +262,17 @@ class DataPrep(object):
             logger.info('X_reg_train and X_reg_val shapes: {}, {}'.format(X_reg_train.shape, X_reg_val.shape))
             logger.info('y_reg_train and y_reg_val shapes: {}, {}'.format(y_reg_train.shape, y_reg_val.shape))
 
-            dump(reg_train, get_data_dir('reg_train.pkl'))
-            dump(reg_val, get_data_dir('reg_val.pkl'))
+            DataPrep.dump_data(reg_train, 'reg_train.pkl')
+            DataPrep.dump_data(reg_val, 'reg_val.pkl')
 
-            logger.info('Dumping csv files (regression model)...')
-            reg_train.to_csv(get_train_dir('reg_train.csv'), header=False, index=False)
-            reg_val.to_csv(get_val_dir('reg_val.csv'), header=False, index=False)
+            DataPrep.dump_data(reg_train, 'reg_train.csv', pkl_format=False)
+            DataPrep.dump_data(reg_val, 'reg_val.csv', pkl_format=False, train_dir=False)
 
             self._push_to_s3(local_path=str(S3_DIR)+'/')
+
+            DataPrep.dump_data(self.ads_pt, 'ads_pt.pkl')
+
+            DataPrep.dump_data(y_reg_train.append(y_reg_val), 'y_reg.pkl')
 
         X_pred = X_pred[pres_cols]
 
@@ -265,11 +282,6 @@ class DataPrep(object):
 
         dump(X_pred, get_data_dir('X_pred.pkl'))
 
+        DataPrep.dump_data(self.ads_po, 'ads_po.pkl')
+
         logger.info('Elapsed time of preparing data: {}'.format(sw.elapsed.human_str()))
-
-
-
-
-
-
-

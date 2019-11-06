@@ -26,45 +26,6 @@ class BrxPrep(object):
         self.threshold = threshold
         self.ext = ext
 
-    def cat_feats(self, dataset):
-
-        logger.info('One-hot-encoding of categorical features... ')
-
-        cols = dataset.columns.ravel()
-        dataset.columns = [re.sub("_CAT_", ":", col) for col in cols]
-
-        cat_vars = ['deviceCategory', 'operatingSystem', 'browser',
-                    'deviceLanguage', 'deviceCountry', 'country',
-                    'subContinent', 'channel', 'mobileDeviceBranding',
-                    'session_md_wave', 'session_md_season',
-                    'pdp_category',  'pdp_brand', 'UserListName',
-                    'adChannelType', 'adWord'
-                    ] # 'session_md_year',
-
-        dataset_cat = dataset[['ID']]
-        dataset_cat.reset_index(drop=True, inplace=True)
-
-        for cat_var in cat_vars:
-            logger.info('Categorical features encoding: {}'.format(cat_var))
-            if cat_var == 'adWord':
-                df_onehot = str_encode(dataset[cat_var], threshold=0.5*self.threshold)
-            else:
-                df_onehot = str_encode(dataset[cat_var], threshold=self.threshold)
-            dataset_cat = pd.concat([dataset_cat, df_onehot], axis=1)
-
-        # subset non-categorical features
-        dataset.set_index('ID', inplace=True)
-        dataset_num = dataset.loc[:, ~(dataset.dtypes == 'object')]
-        dataset_num.reset_index(inplace=True)
-
-        # Join numerical and categorical features
-        dataset = join_datasets(dataset_cat, dataset_num, how='inner', key='ID')
-
-        assert dataset.shape[1] == dataset_cat.shape[1] + dataset_num.shape[1] - 1
-        assert dataset.shape[0] == dataset_cat.shape[0] == dataset_num.shape[0]
-
-        return dataset
-
     @staticmethod
     def user_gens(dataset, chunk_size=50000):
 
@@ -99,11 +60,65 @@ class BrxPrep(object):
 
         return dataset
 
+    @staticmethod
+    def ads_prep(dataset):
+
+        logger.info('Processing adwords data... ')
+
+        dataset = dataset.copy()
+
+        dataset = dataset[['ID', 'campaignId', 'adGroupId', 'criteriaId']]
+
+        dataset.set_index('ID', inplace=True)
+        
+        return dataset
+
+    def cat_feats(self, dataset):
+
+        logger.info('One-hot-encoding of categorical features... ')
+
+        cols = dataset.columns.ravel()
+        dataset.columns = [re.sub("_CAT_", ":", col) for col in cols]
+
+        cat_vars = ['deviceCategory', 'operatingSystem', 'browser',
+                    'deviceLanguage', 'deviceCountry', 'country',
+                    'subContinent', 'channel', 'mobileDeviceBranding',
+                    'session_md_wave', 'session_md_season',
+                    'pdp_category', 'pdp_brand', 'UserListName',
+                    'adChannelType', 'adWord'
+                    ]  # 'session_md_year',
+
+        dataset_cat = dataset[['ID']]
+        dataset_cat.reset_index(drop=True, inplace=True)
+
+        for cat_var in cat_vars:
+            logger.info('Categorical features encoding: {}'.format(cat_var))
+            if cat_var == 'adWord':
+                df_onehot = str_encode(dataset[cat_var], threshold=0.5 * self.threshold)
+            else:
+                df_onehot = str_encode(dataset[cat_var], threshold=self.threshold)
+            dataset_cat = pd.concat([dataset_cat, df_onehot], axis=1)
+
+        # subset non-categorical features
+        dataset.set_index('ID', inplace=True)
+        dataset_num = dataset.loc[:, ~(dataset.dtypes == 'object')]
+        dataset_num.reset_index(inplace=True)
+
+        # Join numerical and categorical features
+        dataset = join_datasets(dataset_cat, dataset_num, how='inner', key='ID')
+
+        assert dataset.shape[1] == dataset_cat.shape[1] + dataset_num.shape[1] - 1
+        assert dataset.shape[0] == dataset_cat.shape[0] == dataset_num.shape[0]
+
+        return dataset
+
     def brx_data_prep(self, chunk_size=50000):
 
         sw = Stopwatch(start=True)
 
-        brx_dataset = BrxRet(self.start_date, self.end_date, self.ext).ret()
+        brx_dataset, ads_dataset = BrxRet(self.start_date, self.end_date, self.ext).ret()
+
+        ads_dataset = BrxPrep.ads_prep(ads_dataset)
 
         if self.ext:
             brx_dataset.drop(columns=['conversion_po'], axis=1, inplace=True)
@@ -133,12 +148,4 @@ class BrxPrep(object):
         else:
             logger.info('Elapsed time of brx ETL (po): {}'.format(sw.elapsed.human_str()))
 
-        return brx_feats
-
-
-# if __name__ == '__main__':
-#
-#     brx_feats = BrxPrep(start_date='2019-10-18', end_date='2019-10-18', threshold=0.01, ext=True)\
-#         .brx_data_prep(chunk_size=100000)
-
-
+        return brx_feats, ads_dataset
