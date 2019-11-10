@@ -126,15 +126,15 @@ class DataPrep(object):
 
         # create Y
         Y = self.trx_po[['marginCAD_sum_cart']].rename(columns={'marginCAD_sum_cart': 'LTV_52W'})\
-            .assign(LTV_active=lambda x: x.LTV_52W >= 1)
+            .assign(LTV_active=lambda x: x.LTV_52W >= 20)
 
         Y_w_pt = join_datasets(Y, margin_val, how='right', key=None)
 
-        Y_w_pt.rename(columns={'marginCAD_sum_cart': 'LTV_pt'}, inplace=True)
+        # Y_w_pt.rename(columns={'marginCAD_sum_cart': 'LTV_pt'}, inplace=True)
 
         Y_w_pt.fillna(value={'LTV_active': False, 'LTV_52W': 0}, inplace=True)
 
-        Y_w_pt.loc[Y_w_pt.LTV_52W < 1, 'LTV_52W'] = 0
+        Y_w_pt.loc[Y_w_pt.LTV_52W < 20, 'LTV_52W'] = 0
 
         logger.info('Y shape: {}'.format(Y_w_pt.shape))
 
@@ -224,7 +224,7 @@ class DataPrep(object):
 
             # Build train and test sets
 
-            indP = (y_value >= np.log1p(1))
+            indP = (y_value >= np.log1p(20))
 
             X_clf_train, X_clf_val, y_clf_train, y_clf_val = train_test_split(
                 X, y_label, test_size=self.test_size, random_state=42, stratify=y_label)
