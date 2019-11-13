@@ -28,15 +28,25 @@ logger = logging.getLogger(__name__)
 
 prefix = '/aws_opt/aws_ml/'
 
-input_path = prefix + 'input/data'
-output_path = os.path.join(prefix, 'output')
-model_path = os.path.join(prefix, 'model')
+# input_path = prefix + 'input/data'
+# output_path = os.path.join(prefix, 'output')
+# model_path = os.path.join(prefix, 'model')
+#
+# train_channel = 'train'
+# training_path = input_path + '/' + train_channel + '/'
+#
+# validation_channel = 'validation'
+# validation_path = input_path + '/' + validation_channel + '/'
+
+input_path = AWS_DATA_DIR
+output_path = AWS_OUTPUT_DIR
+model_path = AWS_MODEL_DIR
 
 train_channel = 'train'
-training_path = input_path + '/' + train_channel + '/'
+training_path = str(input_path) + '/' + str(train_channel) + '/'
 
 validation_channel = 'validation'
-validation_path = input_path + '/' + validation_channel + '/'
+validation_path = str(input_path) + '/' + str(validation_channel) + '/'
 
 
 def fetch_data(model_name):
@@ -77,10 +87,10 @@ def train(model_name):
     params = dict()
 
     if model_name == 'clf':
-        params['objective'] = ['binary:logistic']
+        params['objective'] = 'binary:logistic'
         params['scale_pos_weight'] = load_param_json(get_params_dir('imb_ratio.json'))['imb_ratio']
     else:
-        params['objective'] = ['reg:linear']
+        params['objective'] = 'reg:linear'
 
     train_data, val_data = fetch_data(model_name)
 
@@ -93,7 +103,7 @@ def train(model_name):
     X_val = val_data.iloc[:, 1:].values
     y_val = val_data.iloc[:, 0].values
 
-    model = xgb.train(params=params, dtrain=dtrain, num_boost_round=params['num_round'])
+    model = xgb.train(params=params, dtrain=dtrain)
 
     # with open(os.path.join(model_path, model_name + '-model.pkl'), 'w') as out:
     #     pickle.dump(model, out)
