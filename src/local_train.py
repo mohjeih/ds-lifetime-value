@@ -33,19 +33,21 @@ output_path = os.path.join(prefix, 'output')
 model_path = os.path.join(prefix, 'model')
 
 train_channel = 'train'
-training_path = os.path.join(input_path, train_channel)
+training_path = input_path + '/' + train_channel + '/'
 
 validation_channel = 'validation'
-validation_path = os.path.join(input_path, validation_channel)
+validation_path = input_path + '/' + validation_channel + '/'
 
 
 def fetch_data(model_name):
 
     logger.info('Fetching data...')
 
-    train_data = pd.read_csv(os.path.join(validation_path, model_name, '_train.csv'), header=None)
+    train_file = training_path + model_name + '_train.csv'
+    train_data = pd.read_csv(train_file , header=None)
 
-    val_data = pd.read_csv(os.path.join(validation_path, model_name, '_val.csv'), header=None)
+    val_file = validation_path + model_name + '_val.csv'
+    val_data = pd.read_csv(val_file, header=None)
 
     return train_data, val_data
 
