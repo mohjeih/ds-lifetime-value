@@ -21,4 +21,4 @@ export PYTHONPATH=$SOURCE_CODE
 export CONFIGURATION_FILE=$CONFIGURATION_DIR"/config.yml"
 export GOOGLE_APPLICATION_CREDENTIALS=$CONFIGURATION_DIR"/ssense-3c92053ad127.json"
 
-python3 $SOURCE_CODE"/src/local_tune.py" --model reg $@ &> $LOG_DIR"/local_train.log"
+python3 $SOURCE_CODE"/src/local_train.py" --model reg $@ &> $LOG_DIR"/local_train.log"

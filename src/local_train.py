@@ -44,7 +44,7 @@ def fetch_data(model_name):
     logger.info('Fetching data...')
 
     train_file = training_path + model_name + '_train.csv'
-    train_data = pd.read_csv(train_file , header=None)
+    train_data = pd.read_csv(train_file, header=None)
 
     val_file = validation_path + model_name + '_val.csv'
     val_data = pd.read_csv(val_file, header=None)
