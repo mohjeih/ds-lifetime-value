@@ -72,12 +72,12 @@ def eval(data, model, model_name):
         return y_pred
 
 
-def val_metric(y_true, y_est, model_name):
+def val_metric(y_true, y_est, model_name, attr='train'):
 
         if model_name == 'clf':
-            logger.info('f1 score: {}'.format(f1_score(y_true, y_est)))
+            logger.info('f1 {} score: {}'.format(attr, f1_score(y_true, y_est)))
         else:
-            logger.info('mae score: {}'.format(mean_squared_error(y_true, y_est)))
+            logger.info('mae {} score: {}'.format(attr, mean_squared_error(y_true, y_est)))
 
 
 def train(model_name):
@@ -112,11 +112,11 @@ def train(model_name):
 
     y_train_val = eval(xgb.DMatrix(data=X_train), model, model_name)
 
-    val_metric(y_train, y_train_val, model_name)
+    val_metric(y_train, y_train_val, model_name, attr='train')
 
     y_pred_val = eval(xgb.DMatrix(data=X_val), model, model_name)
 
-    val_metric(y_val, y_pred_val, model_name)
+    val_metric(y_val, y_pred_val, model_name, attr='validation')
 
 
 def get_args():
