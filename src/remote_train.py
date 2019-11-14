@@ -233,18 +233,18 @@ class RemoteTrain(object):
 
         est.fit({'train': s3_input_train, 'validation': s3_input_val})
 
-        # The following method is inconsistent with newer version of xgboost
-        try:
-            est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_aws_metrics.csv'))
-        except:
-            pass
-
-        logger.info('Elapsed time of training: {}'.format(sw.elapsed.human_str()))
-
-        job_name = est.latest_training_job.job_name
-
-        self.dump_model(boto_sess, s3_bucket, job_name)
-
-        self.extract_model()
-
-        self._validation()
+        # # The following method is inconsistent with newer version of xgboost
+        # try:
+        #     est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_aws_metrics.csv'))
+        # except:
+        #     pass
+        #
+        # logger.info('Elapsed time of training: {}'.format(sw.elapsed.human_str()))
+        #
+        # job_name = est.latest_training_job.job_name
+        #
+        # self.dump_model(boto_sess, s3_bucket, job_name)
+        #
+        # self.extract_model()
+        #
+        # self._validation()

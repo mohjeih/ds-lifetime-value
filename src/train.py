@@ -50,13 +50,13 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
-
-    data_ext.extract_transform_load()
-
-    clf_tr = RemoteTrain(model_name=args.clf_model, aws_env=args.aws_env)
-
-    clf_tr.train()
+    # data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
+    #
+    # data_ext.extract_transform_load()
+    #
+    # clf_tr = RemoteTrain(model_name=args.clf_model, aws_env=args.aws_env)
+    #
+    # clf_tr.train()
 
     reg_tr = RemoteTrain(model_name=args.reg_model, aws_env=args.aws_env)
 

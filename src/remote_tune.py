@@ -167,8 +167,8 @@ class ModelTune(object):
                                     objective_metric_name=objective_metric_name,
                                     hyperparameter_ranges=hyperparameter_ranges,
                                     objective_type=objective_type,
-                                    max_jobs=100,
-                                    max_parallel_jobs=10)
+                                    max_jobs=2,
+                                    max_parallel_jobs=2)
 
         sw = Stopwatch(start=True)
 
@@ -206,9 +206,9 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
-
-    data_ext.extract_transform_load()
+    # data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
+    #
+    # data_ext.extract_transform_load()
 
     ml_tune = ModelTune(model_name=args.model, aws_env=args.aws_env)
 
