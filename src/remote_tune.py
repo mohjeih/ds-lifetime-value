@@ -152,13 +152,14 @@ class ModelTune(object):
         if self.model_name == 'clf':
             est.set_hyperparameters(objective='reg:logistic',
                                     scale_pos_weight=self._get_imb_ratio()['imb_ratio'])
-            objective_metric_name = 'validation:f1'
+            objective_metric_name = 'f1 validation score'
             objective_type = 'Maximize'
+            metric_definitions = [{'Name': 'f1 validation score', 'Regex': 'f1 validation score: ([0-9\.]+)'}]
         else:
             est.set_hyperparameters(objective='reg:linear')
-            objective_metric_name = 'validation:rmse'
+            objective_metric_name = 'mae validation score'
             objective_type = 'Minimize'
-            metric_definitions = [{'Name': 'validation:rmse', 'Regex': 'validation:rmse=([0-9\.]+)'}]
+            metric_definitions = [{'Name': 'mae validation score', 'Regex': 'mae validation score: ([0-9\.]+)'}]
 
         if est.hyperparam_dict is None:
             raise ValueError('Hyper-parameters are missing')
