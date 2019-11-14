@@ -112,7 +112,8 @@ class ModelTune(object):
 
         logger.info('Getting algorithm image URI...')
 
-        container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
+        # container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
+        container = "139842200719.dkr.ecr.us-east-2.amazonaws.com/ds-lifetime-value"
 
         logger.info('Creating sagemaker session...')
 
@@ -157,6 +158,7 @@ class ModelTune(object):
             est.set_hyperparameters(objective='reg:linear')
             objective_metric_name = 'validation:rmse'
             objective_type = 'Minimize'
+            metric_definitions = [{'Name': 'validation:rmse', 'Regex': 'validation:rmse=([0-9\.]+)'}]
 
         if est.hyperparam_dict is None:
             raise ValueError('Hyper-parameters are missing')
@@ -165,6 +167,7 @@ class ModelTune(object):
 
         tuner = HyperparameterTuner(estimator=est,
                                     objective_metric_name=objective_metric_name,
+                                    metric_definitions=metric_definitions,
                                     hyperparameter_ranges=hyperparameter_ranges,
                                     objective_type=objective_type,
                                     max_jobs=2,

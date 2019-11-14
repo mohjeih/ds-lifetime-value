@@ -194,7 +194,8 @@ class RemoteTrain(object):
 
         logger.info('Getting algorithm image URI...')
 
-        container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
+        # container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
+        container = "139842200719.dkr.ecr.us-east-2.amazonaws.com/ds-lifetime-value"
 
         logger.info('Creating sagemaker session...')
 
