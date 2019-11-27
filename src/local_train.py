@@ -7,139 +7,117 @@
 Created on Nov 2019
 """
 
-from __future__ import print_function
-
-import argparse
 import logging
 import numpy as np
-import os
-import pandas as pd
 import sys
-import traceback
 import xgboost as xgb
-
-from sklearn.metrics import f1_score, mean_squared_error
-from src.utils.path_helper import *
-from src.utils.resources import *
+from sklearn.metrics import f1_score, classification_report
+from src.params.model_params import *
+from src.utils.path_helper import get_data_dir, get_model_dir, get_params_dir
+from src.utils.ml_helper import conf_matrix, eval_metric
+from src.utils.resources import dump, FlushFile, load, load_param_json
 from timeutils import Stopwatch
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-prefix = '/aws_opt/aws_ml/'
 
-# input_path = prefix + 'input/data'
-# output_path = os.path.join(prefix, 'output')
-# model_path = os.path.join(prefix, 'model')
-#
-# train_channel = 'train'
-# training_path = input_path + '/' + train_channel + '/'
-#
-# validation_channel = 'validation'
-# validation_path = input_path + '/' + validation_channel + '/'
+class LocalTrain(object):
 
-input_path = AWS_DATA_DIR
-output_path = AWS_OUTPUT_DIR
-model_path = AWS_MODEL_DIR
+    def __init__(self, model_name):
 
-train_channel = 'train'
-training_path = str(input_path) + '/' + str(train_channel) + '/'
+        self.model_name = model_name
+        self.params = self._get_params()
 
-validation_channel = 'validation'
-validation_path = str(input_path) + '/' + str(validation_channel) + '/'
-
-
-def fetch_data(model_name):
-
-    logger.info('Fetching data...')
-
-    train_file = training_path + model_name + '_train.csv'
-    train_data = pd.read_csv(train_file, header=None)
-
-    val_file = validation_path + model_name + '_val.csv'
-    val_data = pd.read_csv(val_file, header=None)
-
-    return train_data, val_data
-
-
-def eval(data, model, model_name):
-
-    y_pred = model.predict(data)
-
-    if model_name == 'clf':
-        return np.where(y_pred >= 0.5, 1, 0)
-    else:
-        return y_pred
-
-
-def val_metric(y_true, y_est, model_name, attr='train'):
-
-        if model_name == 'clf':
-            logger.info('f1 {} score: {}'.format(attr, f1_score(y_true, y_est)))
+    def _get_params(self):
+        if self.model_name == 'clf':
+            return CLF_PARAM
         else:
-            logger.info('mae {} score: {}'.format(attr, mean_squared_error(y_true, y_est)))
+            return REG_PARAM
 
+    def load_data(self):
 
-def train(model_name):
+        logger.info('Loading data to train {} model...'.format(self.model_name))
 
-    logger.info('Starting the training...')
+        train = load(get_data_dir(self.model_name + '_train.pkl'))
+        val = load(get_data_dir(self.model_name + '_val.pkl'))
 
-    params = dict()
+        X_train = train.drop(columns=['LTV_active'] if self.model_name == 'clf' else ['LTV_52W'], axis=1)
+        y_train = train['LTV_active'] if self.model_name == 'clf' else train['LTV_52W']
 
-    if model_name == 'clf':
-        params['objective'] = 'binary:logistic'
-        params['scale_pos_weight'] = load_param_json(get_params_dir('imb_ratio.json'))['imb_ratio']
-    else:
-        params['objective'] = 'reg:linear'
+        X_val = val.drop(columns=['LTV_active'] if self.model_name == 'clf' else ['LTV_52W'], axis=1)
+        y_val = val['LTV_active'] if self.model_name == 'clf' else val['LTV_52W']
 
-    train_data, val_data = fetch_data(model_name)
+        return X_train, y_train, X_val, y_val
 
-    # training data
-    X_train = train_data.iloc[:, 1:].values
-    y_train = train_data.iloc[:, 0].values
-    dtrain = xgb.DMatrix(data=X_train, label=y_train)
+    def validation(self, X_val, y_val, model):
 
-    # validation data
-    X_val = val_data.iloc[:, 1:].values
-    y_val = val_data.iloc[:, 0].values
+        y_pred = model.predict(xgb.DMatrix(data=X_val.values), ntree_limit=model.best_ntree_limit)
 
-    model = xgb.train(params=params, dtrain=dtrain)
+        if self.model_name == 'clf':
+            y_label = np.where(y_pred >= 0.5, 1, 0)
+            f1score = np.round(f1_score(y_val.values, y_label), 2)
+            logger.info('f1 score: {}'.format(f1score))
+            logger.info('classification report: \n {}'.format(classification_report(y_val.values, y_label)))
+            logger.info('confusion matrix: \n {}'.format(conf_matrix(y_val.values, y_label)))
+            return y_pred, f1score, None, None, None
+        else:
 
-    # with open(os.path.join(model_path, model_name + '-model.pkl'), 'w') as out:
-    #     pickle.dump(model, out)
+            back_y_pred = np.expm1(y_pred)
+            logger.info('User level log scale...')
+            mae_log, mape_log = eval_metric(y_val, y_pred, agg=False)
+            logger.info('User level back transformation...')
+            mae, mape = eval_metric(np.expm1(y_val.values), back_y_pred, agg=False)
+            return np.expm1(y_val.values), mae, mape, mae_log, mape_log
 
-    logger.info('Calculating the evaluation metric...')
+    def fit_model(self):
 
-    y_train_val = eval(xgb.DMatrix(data=X_train), model, model_name)
+        def mape_eval(y_pred, dval):
+            y_val = dval.get_label()
+            mape_score = np.mean(np.abs(y_val - y_pred) / y_val)
+            return 'mape_score', mape_score
 
-    val_metric(y_train, y_train_val, model_name, attr='train')
+        def f1_eval(y_pred, dval):
+            y_true = dval.get_label()
+            f1score = f1_score(y_true, np.round(y_pred))
+            return 'f1score', f1score
 
-    y_pred_val = eval(xgb.DMatrix(data=X_val), model, model_name)
+        X_train, y_train, X_val, y_val = self.load_data()
 
-    val_metric(y_val, y_pred_val, model_name, attr='validation')
+        dtrain = xgb.DMatrix(data=X_train.values, label=y_train.values)
+        dval = xgb.DMatrix(data=X_val.values, label=y_val.values)
 
+        watch_list = [(dval, 'test')]
 
-def get_args():
-    """
-    Get input arguments
+        if self.model_name == 'clf':
+            self.params['scale_pos_weight'] = load_param_json(get_params_dir('imb_ratio.json'))['imb_ratio']
 
-    """
+        func_mapping = {
+            'reg': mape_eval,
+            'clf': f1_eval}
 
-    parser = argparse.ArgumentParser(description="Executing local training",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        f_eval = func_mapping[self.model_name]
 
-    parser.add_argument('--model', action='store', help="Name of model", dest='model', type=str,
-                        default='reg')
+        old_stdout = sys.stdout
 
-    return parser.parse_args()
+        sw = Stopwatch(start=True)
 
+        sys.stdout = open(str(get_model_dir(self.model_name+'.log')), 'w')
+        sys.stdout = FlushFile(sys.stdout)
 
-if __name__ == '__main__':
+        model = xgb.train(params=self.params, dtrain=dtrain, num_boost_round=self.params['num_round'],
+                          evals=watch_list, feval=f_eval, maximize=True if self.model_name == 'clf' else False,
+                          early_stopping_rounds=100, verbose_eval=True)
 
-    sw = Stopwatch(start=True)
+        sys.stdout = old_stdout
 
-    args = get_args()
+        logger.info('best_ntree_limit: {}'.format(model.best_ntree_limit))
 
-    train(model_name=args.model)
+        logger.info('Elapsed time of training {} model: {}'.format(self.model_name, sw.elapsed.human_str()))
 
-    logger.info('Total elapsed time: {}'.format(sw.elapsed.human_str()))
+        y_pred, metric_1, metric_2, metric_3, metric_4 = self.validation(X_val, y_val, model)
+
+        dump(model, get_model_dir(self.model_name + '-model'))
+
+        return y_pred, metric_1, metric_2, metric_3, metric_4
+

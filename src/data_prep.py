@@ -7,14 +7,14 @@
 Created on Oct 2019
 """
 
-import boto3
+# import boto3
 import logging
 import numpy as np
-import os
+# import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from src.utils.dataframe import join_datasets, get_feature_name
-from src.utils.db_engine import s3_aws_engine
+# from src.utils.db_engine import s3_aws_engine
 from src.utils.path_helper import *
 from src.utils.resources import *
 from timeutils import Stopwatch
@@ -49,30 +49,68 @@ class DataPrep(object):
             else:
                 dataset.to_csv(get_val_dir(filename), header=False, index=False)
 
-    def _push_to_s3(self, local_path=str(S3_DIR)+'/'):
-        """
+    @staticmethod
+    def flooring(dseries):
 
-        Upload local files in folder to s3 bucket
+        dseries = dseries.copy()
 
-        :param local_path: local path
-        """
+        dseries = np.where(dseries <= dseries.quantile(0.2), dseries.quantile(0.2), dseries)
 
-        sw = Stopwatch(start=True)
+        return dseries
 
-        # Get s3 client
-        s3_bucket, id, secret = s3_aws_engine(name=self.aws_env)
+    @staticmethod
+    def capping(dseries):
 
-        s3c = boto3.client('s3', aws_access_key_id=id, aws_secret_access_key=secret)
+        dseries = dseries.copy()
 
-        for root, dirs, files in os.walk(local_path):
+        dseries = np.where(dseries >= dseries.quantile(0.999), dseries.quantile(0.999), dseries)
 
-            for file in files:
-                local_file_path = os.path.join(root, file)
-                s3_file_path = root[len(local_path):] + '/' + file
-                logger.info("Uploading {} to s3://{}/{}".format(local_file_path, s3_bucket, s3_file_path))
-                s3c.upload_file(local_file_path, s3_bucket, s3_file_path)
+        return dseries
 
-        logger.info('Elapsed time of files upload to S3 bucket: {}'.format(sw.elapsed.human_str()))
+    @staticmethod
+    def reg_prep(X, y, indP, X_clf, y_clf):
+
+        X_reg = X[indP & X.index.isin(X_clf.index)]
+
+        y_reg = y[indP & y.index.isin(y_clf.index)]
+        y_reg = y_reg.assign(raw_LTV_52W=lambda x: np.expm1(x.LTV_52W))
+        y_reg.raw_LTV_52W = DataPrep.flooring(y_reg['raw_LTV_52W'])
+        y_reg.raw_LTV_52W = DataPrep.capping(y_reg['raw_LTV_52W'])
+        y_reg = y_reg.assign(LTV_52W=lambda x: np.log1p(x.raw_LTV_52W))
+        y_reg.drop(columns=['raw_LTV_52W'], axis=1, inplace=True)
+
+        return X_reg, y_reg
+
+    @staticmethod
+    def concat_datasets(X, y):
+
+        return pd.concat([y, X], axis=1)
+
+
+    # def _push_to_s3(self, local_path=str(S3_DIR)+'/'):
+    #     """
+    #
+    #     Upload local files in folder to s3 bucket
+    #
+    #     :param local_path: local path
+    #     """
+    #
+    #     sw = Stopwatch(start=True)
+    #
+    #     # Get s3 client
+    #     s3_bucket, id, secret = s3_aws_engine(name=self.aws_env)
+    #
+    #     s3c = boto3.client('s3', aws_access_key_id=id, aws_secret_access_key=secret)
+    #
+    #     for root, dirs, files in os.walk(local_path):
+    #
+    #         for file in files:
+    #             local_file_path = os.path.join(root, file)
+    #             s3_file_path = root[len(local_path):] + '/' + file
+    #             logger.info("Uploading {} to s3://{}/{}".format(local_file_path, s3_bucket, s3_file_path))
+    #             s3c.upload_file(local_file_path, s3_bucket, s3_file_path)
+    #
+    #     logger.info('Elapsed time of files upload to S3 bucket: {}'.format(sw.elapsed.human_str()))
 
     def pt_x(self):
         """
@@ -145,7 +183,7 @@ class DataPrep(object):
         y_label = Y_w_pt['LTV_active'].astype('int8')
 
         # Y_value: for all user what is the net margin
-        y_value = Y_w_pt['LTV_52W'].apply(lambda x: np.log1p(x))
+        y_value = Y_w_pt[['LTV_52W']].apply(lambda x: np.log1p(x))
 
         return y_label, y_value
 
@@ -224,13 +262,13 @@ class DataPrep(object):
 
             # Build train and test sets
 
-            indP = (y_value >= np.log1p(20))
+            indP = (y_value['LTV_52W'].values >= np.log1p(20))
 
             X_clf_train, X_clf_val, y_clf_train, y_clf_val = train_test_split(
                 X, y_label, test_size=self.test_size, random_state=42, stratify=y_label)
 
-            clf_train = pd.concat([y_clf_train, X_clf_train], axis=1)
-            clf_val = pd.concat([y_clf_val, X_clf_val], axis=1)
+            clf_train = DataPrep.concat_datasets(X_clf_train, y_clf_train)
+            clf_val = DataPrep.concat_datasets(X_clf_val, y_clf_val)
 
             imb_ratio = float(np.sum(y_clf_train == 0) / np.sum(y_clf_train == 1))
 
@@ -247,17 +285,14 @@ class DataPrep(object):
             DataPrep.dump_data(clf_train, 'clf_train.pkl')
             DataPrep.dump_data(clf_val, 'clf_val.pkl')
 
-            DataPrep.dump_data(clf_train, 'clf_train.csv', pkl_format=False)
-            DataPrep.dump_data(clf_val, 'clf_val.csv', pkl_format=False, train_dir=False)
+            # DataPrep.dump_data(clf_train, 'clf_train.csv', pkl_format=False)
+            # DataPrep.dump_data(clf_val, 'clf_val.csv', pkl_format=False, train_dir=False)
 
-            X_reg_train = X[indP & X.index.isin(X_clf_train.index)]
-            X_reg_val = X[indP & X.index.isin(X_clf_val.index)]
+            X_reg_train, y_reg_train = DataPrep.reg_prep(X, y_value, indP, X_clf_train, y_clf_train)
+            X_reg_val, y_reg_val = DataPrep.reg_prep(X, y_value, indP, X_clf_val, y_clf_val)
 
-            y_reg_train = y_value[indP & y_value.index.isin(y_clf_train.index)]
-            y_reg_val = y_value[indP & y_value.index.isin(y_clf_val.index)]
-
-            reg_train = pd.concat([y_reg_train, X_reg_train], axis=1)
-            reg_val = pd.concat([y_reg_val, X_reg_val], axis=1)
+            reg_train = DataPrep.concat_datasets(X_reg_train, y_reg_train)
+            reg_val = DataPrep.concat_datasets(X_reg_val, y_reg_val)
 
             logger.info('X_reg_train and X_reg_val shapes: {}, {}'.format(X_reg_train.shape, X_reg_val.shape))
             logger.info('y_reg_train and y_reg_val shapes: {}, {}'.format(y_reg_train.shape, y_reg_val.shape))
@@ -265,10 +300,10 @@ class DataPrep(object):
             DataPrep.dump_data(reg_train, 'reg_train.pkl')
             DataPrep.dump_data(reg_val, 'reg_val.pkl')
 
-            DataPrep.dump_data(reg_train, 'reg_train.csv', pkl_format=False)
-            DataPrep.dump_data(reg_val, 'reg_val.csv', pkl_format=False, train_dir=False)
+            # DataPrep.dump_data(reg_train, 'reg_train.csv', pkl_format=False)
+            # DataPrep.dump_data(reg_val, 'reg_val.csv', pkl_format=False, train_dir=False)
 
-            self._push_to_s3(local_path=str(S3_DIR)+'/')
+            # self._push_to_s3(local_path=str(S3_DIR)+'/')
 
             DataPrep.dump_data(self.ads_pt, 'ads_pt.pkl')
 

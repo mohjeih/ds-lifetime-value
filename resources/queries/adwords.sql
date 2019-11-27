@@ -44,7 +44,7 @@ when AdvertisingChannelType in ('SHOPPING') and REGEXP_CONTAINS(lower(Criteria),
 when AdvertisingChannelType in ('SHOPPING') and not REGEXP_CONTAINS(lower(Criteria), r"brand==") and REGEXP_CONTAINS(lower(Criteria), r"custom") then null
 else  lower(Criteria)
 end as adWord
-from `ds_sessions_value.adwords_account_table`
+from `Adwords.adwords_account_table`
 where  AdvertisingChannelType in ('SHOPPING', 'DISPLAY', 'SEARCH')
 ) as t
 

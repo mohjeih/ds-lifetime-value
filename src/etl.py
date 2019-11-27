@@ -70,7 +70,7 @@ class DataExt(object):
         brx_prep = BrxPrep(self.start_po, self.end_po, brx_threshold, ext=False)
         brx_po, ads_po = brx_prep.brx_data_prep()
 
-        data_prep = DataPrep(trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, test_size=0.30, aws_env=self.aws_env)
+        data_prep = DataPrep(trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, test_size=0.20, aws_env=self.aws_env)
         data_prep.prep(self.calib)
 
         logger.info('Elapsed time of ETL job: {}'.format(sw.elapsed.human_str()))

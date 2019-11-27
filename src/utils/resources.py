@@ -8,7 +8,9 @@ Created on Aug 2019
 """
 
 import json
+import os
 import pickle
+import sys
 import unicodedata
 
 
@@ -82,3 +84,22 @@ def load_param_json(filename):
         raise ValueError("Failed to load the desired file")
 
 
+def load_project_id():
+    with open(os.environ['GOOGLE_APPLICATION_CREDENTIALS']) as secret:
+        return json.loads(secret.read())['project_id']
+
+
+class FlushFile(object):
+
+    def __init__(self, f):
+        self.f = f
+
+    def __getattr__(self, name):
+        return object.__getattribute__(self.f, name)
+
+    def write(self, x):
+        self.f.write(x)
+        self.f.flush()
+
+    def flush(self):
+        self.f.flush()

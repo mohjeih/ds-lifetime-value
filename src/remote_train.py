@@ -72,7 +72,7 @@ class RemoteTrain(object):
         else:
             return get_aws_role('ssense-role-prod')
 
-    def fetch_data(self, s3_path):
+    def load_data(self, s3_path):
 
         logger.info('Creating pointers to the files in S3...')
 
@@ -128,7 +128,7 @@ class RemoteTrain(object):
 
     def fetch_data_val(self, var):
 
-        logger.info('Fetching validation data...')
+        logger.info('Loading validation data...')
 
         val_df = load(get_data_dir(self.model_name + '_val.pkl'))
         X_val = val_df.drop(columns=var, axis=1).values
@@ -194,14 +194,13 @@ class RemoteTrain(object):
 
         logger.info('Getting algorithm image URI...')
 
-        # container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
-        container = "139842200719.dkr.ecr.us-east-2.amazonaws.com/ds-lifetime-value"
+        container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
 
         logger.info('Creating sagemaker session...')
 
         sage_sess = sagemaker.Session(boto_sess)
 
-        s3_input_train, s3_input_val = self.fetch_data(s3_path)
+        s3_input_train, s3_input_val = self.load_data(s3_path)
 
         logger.info('Creating sagemaker estimator to train using the supplied {} model...'.format(self.model_name))
 
@@ -234,18 +233,18 @@ class RemoteTrain(object):
 
         est.fit({'train': s3_input_train, 'validation': s3_input_val})
 
-        # # The following method is inconsistent with newer version of xgboost
-        # try:
-        #     est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_aws_metrics.csv'))
-        # except:
-        #     pass
-        #
-        # logger.info('Elapsed time of training: {}'.format(sw.elapsed.human_str()))
-        #
-        # job_name = est.latest_training_job.job_name
-        #
-        # self.dump_model(boto_sess, s3_bucket, job_name)
-        #
-        # self.extract_model()
-        #
-        # self._validation()
+        # The following method is inconsistent with newer version of xgboost
+        try:
+            est.training_job_analytics.export_csv(get_model_dir(self.model_name+'_aws_metrics.csv'))
+        except:
+            pass
+
+        logger.info('Elapsed time of training: {}'.format(sw.elapsed.human_str()))
+
+        job_name = est.latest_training_job.job_name
+
+        self.dump_model(boto_sess, s3_bucket, job_name)
+
+        self.extract_model()
+
+        self._validation()

@@ -8,9 +8,7 @@ Created on Aug 2019
 """
 
 import logging
-import json
-import os
-from src.utils.resources import normalize
+from src.utils.resources import normalize, load_project_id
 from src.data_extraction.products import ProductQuery
 from src.data_extraction.markdown import MarkdownQuery
 from src.data_extraction.resellers import ResellerQuery
@@ -31,8 +29,7 @@ class DataRet(object):
         self.bucket_name = 'ga_ltv'
         self.file_name = 'brx_*.csv'
         self.prefix = 'brx_'
-        with open(os.environ['GOOGLE_APPLICATION_CREDENTIALS']) as secret:
-            self.project_id = json.loads(secret.read())['project_id']
+        self.project_id = load_project_id()
 
     def pd_ext(self, table_id):
 
@@ -82,7 +79,7 @@ class DataRet(object):
 
     def mid_ext(self, table_id, dataset):
 
-        logger.info('Uploading memberIDs to Bigquery...')
+        logger.info('Uploading memberIDs to {} ...'.format(table_id))
 
         export_pandas_to_table(self.dataset_id, table_id=table_id, dataset=dataset, project_id=self.project_id)
 
