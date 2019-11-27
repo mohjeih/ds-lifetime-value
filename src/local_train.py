@@ -40,13 +40,34 @@ class LocalTrain(object):
         logger.info('Loading data to train {} model...'.format(self.model_name))
 
         train = load(get_data_dir(self.model_name + '_train.pkl'))
+
         val = load(get_data_dir(self.model_name + '_val.pkl'))
 
-        X_train = train.drop(columns=['LTV_active'] if self.model_name == 'clf' else ['LTV_52W'], axis=1)
-        y_train = train['LTV_active'] if self.model_name == 'clf' else train['LTV_52W']
+        return train, val
 
-        X_val = val.drop(columns=['LTV_active'] if self.model_name == 'clf' else ['LTV_52W'], axis=1)
-        y_val = val['LTV_active'] if self.model_name == 'clf' else val['LTV_52W']
+    def creat_data(self, dataset):
+
+        X = dataset.drop(columns=['LTV_active'] if self.model_name == 'clf' else ['LTV_52W'], axis=1)
+
+        y = dataset['LTV_active'] if self.model_name == 'clf' else dataset['LTV_52W']
+
+        return X, y
+
+    def prep_data(self):
+
+        train, val = self.load_data()
+
+        logger.info('Creating train set... ')
+
+        X_train, y_train = self.creat_data(train)
+
+        logger.info('X_train and y_train shapes: {}, {}'.format(X_train.shape, y_train.shape))
+
+        logger.info('Creating validation set... ')
+
+        X_val, y_val = self.creat_data(val)
+
+        logger.info('X_val and y_val shapes: {}, {}'.format(X_val.shape, y_val.shape))
 
         return X_train, y_train, X_val, y_val
 
@@ -62,7 +83,6 @@ class LocalTrain(object):
             logger.info('confusion matrix: \n {}'.format(conf_matrix(y_val.values, y_label)))
             return y_pred, f1score, None, None, None
         else:
-
             back_y_pred = np.expm1(y_pred)
             logger.info('User level log scale...')
             mae_log, mape_log = eval_metric(y_val, y_pred, agg=False)
@@ -82,7 +102,7 @@ class LocalTrain(object):
             f1score = f1_score(y_true, np.round(y_pred))
             return 'f1score', f1score
 
-        X_train, y_train, X_val, y_val = self.load_data()
+        X_train, y_train, X_val, y_val = self.prep_data()
 
         dtrain = xgb.DMatrix(data=X_train.values, label=y_train.values)
         dval = xgb.DMatrix(data=X_val.values, label=y_val.values)
@@ -101,6 +121,8 @@ class LocalTrain(object):
         old_stdout = sys.stdout
 
         sw = Stopwatch(start=True)
+
+        logger.info('Training {} model...'.format(self.model_name))
 
         sys.stdout = open(str(get_model_dir(self.model_name+'.log')), 'w')
         sys.stdout = FlushFile(sys.stdout)
