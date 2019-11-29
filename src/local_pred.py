@@ -45,7 +45,7 @@ class LocalPred(object):
         logger.info('Uploading metric values to BigQuery...')
 
         export_pandas_to_table(dataset_id='ds_sessions_value', table_id='_prediction', dataset=dataset,
-                               project_id=load_project_id(), if_exists='replace')
+                               project_id=load_project_id(), if_exists='append')
 
     def load_model(self, model_name):
 
@@ -92,24 +92,24 @@ class LocalPred(object):
 
 def get_args():
     """
-    Return input arguments
+    Get input arguments
 
     """
 
     parser = argparse.ArgumentParser(description="Predicting probabilities and monetary values",
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--last_n_weeks', action='store', help="The number of weeks", dest='last_n_weeks', type=int,
-                            default=52)
+                        default=52)
 
     parser.add_argument('--aws_env', action='store', help="AWS environment", dest='aws_env', type=str,
-                            default='ssense-cltv-qa')
+                        default='ssense-cltv-qa')
 
     parser.add_argument('--clf_model', action='store', help="Name of classifier", dest='clf_model', type=str,
-                            default='clf')
+                        default='clf')
 
     parser.add_argument('--reg_model', action='store', help="Name of regressor", dest='reg_model', type=str,
-                            default='reg')
+                        default='reg')
 
     return parser.parse_args()
 
@@ -120,9 +120,9 @@ if __name__ == '__main__':
 
         args = get_args()
 
-        # data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=False)
-        #
-        # data_ext.extract_transform_load()
+        data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=False)
+
+        data_ext.extract_transform_load()
 
         file_dict = {'clf': 'clf-model',
                      'reg': 'reg-model'}

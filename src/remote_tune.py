@@ -112,8 +112,7 @@ class ModelTune(object):
 
         logger.info('Getting algorithm image URI...')
 
-        # container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
-        container = "139842200719.dkr.ecr.us-east-2.amazonaws.com/ds-lifetime-value"
+        container = get_image_uri(boto_sess.region_name, 'xgboost', repo_version='0.90-1')
 
         logger.info('Creating sagemaker session...')
 
@@ -152,14 +151,12 @@ class ModelTune(object):
         if self.model_name == 'clf':
             est.set_hyperparameters(objective='reg:logistic',
                                     scale_pos_weight=self._get_imb_ratio()['imb_ratio'])
-            objective_metric_name = 'f1 validation score'
+            objective_metric_name = 'validation:f1'
             objective_type = 'Maximize'
-            metric_definitions = [{'Name': 'f1 validation score', 'Regex': 'f1 validation score: ([0-9\.]+)'}]
         else:
             est.set_hyperparameters(objective='reg:linear')
-            objective_metric_name = 'mae validation score'
+            objective_metric_name = 'validation:rmse'
             objective_type = 'Minimize'
-            metric_definitions = [{'Name': 'mae validation score', 'Regex': 'mae validation score: ([0-9\.]+)'}]
 
         if est.hyperparam_dict is None:
             raise ValueError('Hyper-parameters are missing')
@@ -168,11 +165,10 @@ class ModelTune(object):
 
         tuner = HyperparameterTuner(estimator=est,
                                     objective_metric_name=objective_metric_name,
-                                    metric_definitions=metric_definitions,
                                     hyperparameter_ranges=hyperparameter_ranges,
                                     objective_type=objective_type,
-                                    max_jobs=2,
-                                    max_parallel_jobs=2)
+                                    max_jobs=100,
+                                    max_parallel_jobs=10)
 
         sw = Stopwatch(start=True)
 
@@ -210,9 +206,9 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    # data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
-    #
-    # data_ext.extract_transform_load()
+    data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
+
+    data_ext.extract_transform_load()
 
     ml_tune = ModelTune(model_name=args.model, aws_env=args.aws_env)
 

@@ -74,7 +74,7 @@ def model_calib():
 
 def get_args():
     """
-    Return input arguments
+    Get input arguments
 
     """
 
@@ -99,9 +99,9 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    # data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
-    #
-    # data_ext.extract_transform_load()
+    data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
+
+    data_ext.extract_transform_load()
 
     model_calib()
 

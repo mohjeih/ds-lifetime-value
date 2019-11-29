@@ -307,8 +307,6 @@ class DataPrep(object):
 
             DataPrep.dump_data(self.ads_pt, 'ads_pt.pkl')
 
-            DataPrep.dump_data(y_reg_train.append(y_reg_val), 'y_reg.pkl')
-
         X_pred = X_pred[pres_cols]
 
         X_pred = X_pred.fillna(-9999)

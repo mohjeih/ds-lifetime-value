@@ -55,7 +55,7 @@ where (s.date >= '@start_date' and s.date <= '@end_date')) as sm
 left join
 
 (select distinct fullVisitorId, string_agg(invoiceID) as invoiceID
-from `ds_sessions_value._invoices`
+from `ds_sessions_value._invoices_po`
 group by fullVisitorId ) as inv
 
 on sm.fullVisitorId = inv.fullVisitorId) as smc

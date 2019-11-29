@@ -66,7 +66,7 @@ class BrxRet(DataRet):
 
         logger.info('Extracting page history...')
 
-        page_raw = PageRaw(self.dataset_id, self.start_date, self.end_date,
+        page_raw = PageRaw(self.dataset_id, self.ext, self.start_date, self.end_date,
                            table_id=table_id, colnames='*')
 
         page_raw.run()
@@ -135,6 +135,12 @@ class BrxRet(DataRet):
         return download_from_storage_to_pandas(bucket_name=self.bucket_name, prefix=self.prefix,
                                                col_type={'ID': 'str'})
 
+    def table_del(self, tables_list):
+
+        for table_id in tables_list:
+
+            delete_table(dataset_id=self.dataset_id, table_id=table_id)
+
     def ret(self):
 
         self.pd_ext(table_id='_products')
@@ -159,6 +165,10 @@ class BrxRet(DataRet):
 
         self.session_feat_ext(table_id='_session_features')
 
+        tables_to_delete = ['_products', '_employees', '_adwords', '_audiences', '_markdown', '_session_raw_agg',
+                            '_session_md', '_page_raw', '_page_features', '_pdp_features', '_session_features',
+                            '_users']
+
         if self.ext:
 
             self.brx_feat_agg(table_id='_brx_features_pt')
@@ -171,6 +181,11 @@ class BrxRet(DataRet):
 
             ads_dataset = self.sync(table_id='_ad_users_pt')
 
+            ext_tables_to_delete = tables_to_delete + ['_brx_features_pt', '_brx_sample', '_ad_users_pt',
+                                                       '_invoices']
+
+            # self.table_del(ext_tables_to_delete)
+
         else:
 
             self.brx_feat_agg(table_id='_brx_features_po')
@@ -180,6 +195,10 @@ class BrxRet(DataRet):
             brx_dataset = self.sync(table_id='_brx_features_po')
 
             ads_dataset = self.sync(table_id='_ad_users_po')
+
+            ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
+
+            # self.table_del(ext_tables_to_delete)
 
         brx_dataset.reset_index(inplace=True, drop=True)
 

@@ -115,11 +115,10 @@ class TrxRet(DataRet):
             dataset[dataset.flagReseller == 1].marginCAD_net > non_rs_marginCAD_net, non_rs_marginCAD_net,
             dataset.loc[dataset.flagReseller == 1, 'marginCAD_net'])
 
-        if self.ext:
-            mid_dataset = dataset[['memberID', 'fullVisitorId']].copy()
-            mid_dataset.sort_values(by='memberID', inplace=True)
-            mid_dataset.drop_duplicates(subset=['fullVisitorId'], inplace=True)
-            self.mid_ext(table_id='_users', dataset=mid_dataset)
+        mid_dataset = dataset[['memberID', 'fullVisitorId']].copy()
+        mid_dataset.sort_values(by='memberID', inplace=True)
+        mid_dataset.drop_duplicates(subset=['fullVisitorId'], inplace=True)
+        self.mid_ext(table_id='_users', dataset=mid_dataset)
 
         dataset.memberID = cast_type(dataset, 'memberID', type='str')
 

@@ -46,7 +46,7 @@ class DataExt(object):
         brx_pt = pd.DataFrame()
         ads_pt = pd.DataFrame()
 
-        logger.info('Extracting invoice data: {} to {}...'.format(self.start_po, datetime.today()))
+        logger.info('Extracting invoice data: {} to {}...'.format(self.start_po, self.end_po))
 
         DataRet(self.start_po, self.end_po).invoice_ext(table_id='_invoices_po')
 
