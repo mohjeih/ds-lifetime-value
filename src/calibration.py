@@ -25,20 +25,20 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-def model_calib():
+def model_calib(clf_model, reg_model):
 
     metrics = dict()
 
     timestamp = datetime.date.today().strftime('%Y-%m-%d')
     metrics.update({'timestamp': [timestamp]})
 
-    clf_calib = LocalTrain(model_name=args.clf_model)
+    clf_calib = LocalTrain(model_name=clf_model)
 
     y_clf_pred, f1_score, _, _, _ = clf_calib.fit_model()
 
     metrics.update({'f1_score': [f1_score]})
 
-    reg_calib = LocalTrain(model_name=args.reg_model)
+    reg_calib = LocalTrain(model_name=reg_model)
 
     y_reg_pred, mae, mape, log_mae, log_mape = reg_calib.fit_model()
 
@@ -84,6 +84,9 @@ def get_args():
     parser.add_argument('--last_n_weeks', action='store', help="The number of weeks", dest='last_n_weeks', type=int,
                         default=52)
 
+    parser.add_argument('--aws_env', action='store', help="AWS environment", dest='aws_env', type=str,
+                        default='ssense-cltv-qa')
+
     parser.add_argument('--clf_model', action='store', help="Name of classifier", dest='clf_model', type=str,
                         default='clf')
 
@@ -103,7 +106,7 @@ if __name__ == '__main__':
 
     data_ext.extract_transform_load()
 
-    model_calib()
+    model_calib(clf_model=args.clf_model, reg_model=args.reg_model)
 
     logger.info('Total elapsed time: {}'.format(sw.elapsed.human_str()))
 
