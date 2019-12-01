@@ -184,7 +184,7 @@ class BrxRet(DataRet):
             ext_tables_to_delete = tables_to_delete + ['_brx_features_pt', '_brx_sample', '_ad_users_pt',
                                                        '_invoices']
 
-            # self.table_del(ext_tables_to_delete)
+            self.table_del(ext_tables_to_delete)
 
         else:
 
@@ -198,7 +198,7 @@ class BrxRet(DataRet):
 
             ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
 
-            # self.table_del(ext_tables_to_delete)
+            self.table_del(ext_tables_to_delete)
 
         brx_dataset.reset_index(inplace=True, drop=True)
 

@@ -44,7 +44,7 @@ class LocalPred(object):
 
         logger.info('Uploading metric values to BigQuery...')
 
-        export_pandas_to_table(dataset_id='ds_sessions_value', table_id='_prediction', dataset=dataset,
+        export_pandas_to_table(dataset_id='ds_sessions_value', table_id='scoring', dataset=dataset,
                                project_id=load_project_id(), if_exists='append')
 
     def load_model(self, model_name):
@@ -83,7 +83,7 @@ class LocalPred(object):
 
         y_pred['value'] = np.expm1(y_pred['value'].values)
 
-        y_pred = y_pred.assign(exp_value=lambda x: np.round(x.proba*x.value, 4))
+        y_pred = y_pred.assign(expected_value=lambda x: np.round(x.proba*x.value, 4))
 
         LocalPred.upload_pred(y_pred)
 

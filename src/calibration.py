@@ -68,7 +68,7 @@ def model_calib(clf_model, reg_model):
 
     logger.info('Uploading metric values to BigQuery...')
 
-    export_pandas_to_table(dataset_id='ds_sessions_value', table_id='_metrics', dataset=metrics_df,
+    export_pandas_to_table(dataset_id='ds_sessions_value', table_id='cron_tracker', dataset=metrics_df,
                            project_id=load_project_id(), if_exists='append')
 
 
