@@ -9,18 +9,18 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-def delete_table(dataset_id: str, table_id):
+def delete_table(dataset_id: str, table_ids: list):
     """
 
     Delete the table created in the dataset
 
     :param dataset_id: str, id of the dataset
-    :param table_id: str, id of the table
+    :param table_id: list id of table ids
     """
 
     try:
         storage_client = bigquery.Client()
-        for id in table_id:
+        for id in table_ids:
             table_ref = storage_client.dataset(dataset_id).table(id)
             # API request
             logger.info('Deleting table {}:{}'.format(dataset_id, id))

@@ -44,7 +44,7 @@ class LocalPred(object):
 
         logger.info('Uploading metric values to BigQuery...')
 
-        export_pandas_to_table(dataset_id='ds_sessions_value', table_id='scoring', dataset=dataset,
+        export_pandas_to_table(dataset_id='ds_sessions_value', table_id='ltv_scores', dataset=dataset,
                                project_id=load_project_id(), if_exists='append')
 
     def load_model(self, model_name):

@@ -135,12 +135,6 @@ class BrxRet(DataRet):
         return download_from_storage_to_pandas(bucket_name=self.bucket_name, prefix=self.prefix,
                                                col_type={'ID': 'str'})
 
-    def table_del(self, tables_list):
-
-        for table_id in tables_list:
-
-            delete_table(dataset_id=self.dataset_id, table_id=table_id)
-
     def ret(self):
 
         self.pd_ext(table_id='_products')
@@ -184,7 +178,7 @@ class BrxRet(DataRet):
             ext_tables_to_delete = tables_to_delete + ['_brx_features_pt', '_brx_sample', '_ad_users_pt',
                                                        '_invoices']
 
-            self.table_del(ext_tables_to_delete)
+            delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
         else:
 
@@ -198,7 +192,7 @@ class BrxRet(DataRet):
 
             ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
 
-            self.table_del(ext_tables_to_delete)
+            delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
         brx_dataset.reset_index(inplace=True, drop=True)
 
