@@ -235,6 +235,9 @@ class DataPrep(object):
 
         if not calib:
             pres_cols = load(get_data_dir('features.pkl'))
+            diff_cols = np.setdiff1d(pres_cols, X_pred.columns.values)
+            for col in diff_cols:
+                X_pred[col] = np.nan
         else:
             pres_cols = np.zeros(shape=X_pred.shape[1])
 
@@ -250,7 +253,7 @@ class DataPrep(object):
 
             X = X[pres_cols]
 
-            X = X.fillna(-9999)
+            X.fillna(value=-9999, inplace=True)
 
             logger.info('X shape: {}'.format(X.shape))
 
@@ -309,7 +312,7 @@ class DataPrep(object):
 
         X_pred = X_pred[pres_cols]
 
-        X_pred = X_pred.fillna(-9999)
+        X_pred.fillna(value=-9999, inplace=True)
 
         logger.info('X_pred shape: {}'.format(X_pred.shape))
 

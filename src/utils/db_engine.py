@@ -81,13 +81,14 @@ def get_data_slave(db_name: str, query: str, cols_list: list,
     try:
         cnx = mysql_engine(db_name, echo)
         dataset = pd.read_sql(query, cnx)
-        for col in cols_list:
-            logger.info('Fixing characters in %s ' % col)
-            dataset[col].replace(
-                mysql_character_fix,
-                regex=True,
-                inplace=True
-            )
+        if len(cols_list) != 0:
+            for col in cols_list:
+                logger.info('Fixing characters in %s ' % col)
+                dataset[col].replace(
+                    mysql_character_fix,
+                    regex=True,
+                    inplace=True
+                )
     except Exception as err:
         logger.error('Something went wrong: {}'.format(err))
         raise err
