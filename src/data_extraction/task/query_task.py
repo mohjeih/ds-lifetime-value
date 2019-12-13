@@ -57,7 +57,7 @@ class BigQueryConnector(Connector):
         with open(os.environ['GOOGLE_APPLICATION_CREDENTIALS']) as secret:
             self.project_id = json.loads(secret.read())['project_id']
 
-    def create_table(self, table_id: str, query: str):
+    def create_table(self, table_id: str, query: str, overwrite: bool):
         """
 
         Extract data from BigQuery and store it into a table
@@ -72,7 +72,10 @@ class BigQueryConnector(Connector):
             table_ref = storage_client.dataset(self.dataset_id).table(table_id)
             job_config.destination = table_ref
             job_config.allow_large_results = True
-            job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+            if overwrite:
+                job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+            else:
+                job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
             # API request - starts the query
             query_job = storage_client.query(
                 query, location='US', job_config=job_config)
@@ -83,9 +86,9 @@ class BigQueryConnector(Connector):
         except Exception:
             raise ValueError('Unable to load results into table {}:{}'.format(self.dataset_id, table_id))
 
-    def run(self, table_id, query):
+    def run(self, table_id, query, overwrite=True):
 
-        self.create_table(table_id, query)
+        self.create_table(table_id, query, overwrite=overwrite)
 
 
 class ConnectorSQL(Connector):

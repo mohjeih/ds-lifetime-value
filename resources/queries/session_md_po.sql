@@ -4,6 +4,12 @@ select
 @colnames
 from (
 
+select session_md.*
+
+from
+
+(
+
 select distinct
 
 case
@@ -32,7 +38,8 @@ end as conversion
 
 from
 
-(select distinct
+(
+select distinct
     s.*,
     md.isMD as session_in_md,
     md.wave as session_md_wave,
@@ -41,16 +48,24 @@ from
 from `ds_sessions_value._session_raw_agg` s
 
 inner join(
+
 select distinct sc.fullVisitorId
 from `ds_sessions_value._session_raw_agg` sc
 where sc.channel in ('SEM_PLA', 'SEM_Non_Branded', 'Display')
-and sc.date = (select max(so.date) from `ds_sessions_value._session_raw_agg` so)
+and sc.date in (
+    select distinct so.date as so_date
+    from `ds_sessions_value._session_raw_agg` so
+    where (PARSE_DATE('%Y-%m-%d', so.date) >= DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)
+          and PARSE_DATE('%Y-%m-%d', so.date) <= CURRENT_DATE())
+          )
 ) as t
+
 on s.fullVisitorId = t.fullVisitorId
 
 join `ds_sessions_value._markdown` md
 on s.date = md.date
-where (s.date >= '@start_date' and s.date <= '@end_date')) as sm
+where (s.date >= '@start_date' and s.date <= '@end_date')
+) as sm
 
 left join
 
@@ -58,12 +73,21 @@ left join
 from `ds_sessions_value._invoices_po`
 group by fullVisitorId ) as inv
 
-on sm.fullVisitorId = inv.fullVisitorId) as smc
+on sm.fullVisitorId = inv.fullVisitorId
+) as smc
 
 left join `ds_sessions_value._users` u
 
 on smc.fullVisitorId = u.fullVisitorId
 
 ) as smd
+
+) as session_md
+
+where session_md.sessionId not in (
+            select su.sessionId
+            from `ds_sessions_value._sessionId_update` su
+            where  PARSE_DATE('%Y-%m-%d', su.date) = DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)
+      )
 
 ) x

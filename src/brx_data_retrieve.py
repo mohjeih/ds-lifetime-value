@@ -19,6 +19,7 @@ from src.data_extraction.pdp_features import PdpFeat
 from src.data_extraction.session_features import SessionFeat
 from src.data_extraction.brx_features import BrxFeat
 from src.data_extraction.brx_sample import BrxSamples
+from src.data_extraction.session_update import SessUpdate
 from src.utils.bq_helper import *
 
 
@@ -52,6 +53,15 @@ class BrxRet(DataRet):
                                  table_id=table_id, colnames='*')
 
         session_raw.run()
+
+    def paid_session_update(self, table_id):
+
+        logger.info('Updating paid sessions table...')
+
+        session_update = SessUpdate(self.dataset_id, table_id=table_id,
+                                 colnames='*', overwrite=False)
+
+        session_update.run()
 
     def session_md_ext(self, table_id):
 
@@ -149,6 +159,9 @@ class BrxRet(DataRet):
 
         self.session_ext(table_id='_session_raw_agg')
 
+        if not self.ext:
+            self.paid_session_update(table_id='_sessionId_update')
+
         self.session_md_ext(table_id='_session_md')
 
         self.page_ext(table_id='_page_raw')
@@ -192,7 +205,7 @@ class BrxRet(DataRet):
 
             ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
 
-            delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
+            # delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
         brx_dataset.reset_index(inplace=True, drop=True)
 
