@@ -60,7 +60,7 @@ class DataExt(object):
             trx_pt = trx_prep.trx_data_prep()
 
             brx_prep = BrxPrep(self.start_pt, self.end_pt, brx_threshold, ext=ext)
-            brx_pt, ads_pt = brx_prep.brx_data_prep()
+            brx_pt, ads_pt, _ = brx_prep.brx_data_prep()
 
         logger.info('Extracting observation data: {} to {}...'.format(self.start_po, self.end_po))
 
@@ -68,9 +68,10 @@ class DataExt(object):
         trx_po = trx_prep.trx_data_prep()
 
         brx_prep = BrxPrep(self.start_po, self.end_po, brx_threshold, ext=False)
-        brx_po, ads_po = brx_prep.brx_data_prep()
+        brx_po, ads_po, date_po = brx_prep.brx_data_prep()
 
-        data_prep = DataPrep(trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, test_size=0.20, aws_env=self.aws_env)
+        data_prep = DataPrep(trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, date_po,
+                             test_size=0.20, aws_env=self.aws_env)
         data_prep.prep(self.calib)
 
         logger.info('Elapsed time of ETL job: {}'.format(sw.elapsed.human_str()))

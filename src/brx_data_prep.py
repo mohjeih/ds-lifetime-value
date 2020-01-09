@@ -116,7 +116,12 @@ class BrxPrep(object):
 
         sw = Stopwatch(start=True)
 
-        brx_dataset, ads_dataset = BrxRet(self.start_date, self.end_date, self.ext).ret()
+        date_dataset = pd.DataFrame()
+
+        if self.ext:
+            brx_dataset, ads_dataset, _ = BrxRet(self.start_date, self.end_date, self.ext).ret()
+        else:
+            brx_dataset, ads_dataset, date_dataset = BrxRet(self.start_date, self.end_date, self.ext).ret()
 
         ads_dataset = BrxPrep.ads_prep(ads_dataset)
 
@@ -148,4 +153,4 @@ class BrxPrep(object):
         else:
             logger.info('Elapsed time of brx ETL (po): {}'.format(sw.elapsed.human_str()))
 
-        return brx_feats, ads_dataset
+        return brx_feats, ads_dataset, date_dataset

@@ -10,6 +10,7 @@ Created on Aug 2019
 from src.data_retrieve import DataRet
 from src.data_extraction.session_agg import SessionRaw
 from src.data_extraction.session_agg_md import SessionMd
+from src.data_extraction.session_md_po import SessMdpo
 from src.data_extraction.audiences import AudRaw
 from src.data_extraction.adwords import AdRaw
 from src.data_extraction.ad_users import AdUsers
@@ -20,6 +21,7 @@ from src.data_extraction.session_features import SessionFeat
 from src.data_extraction.brx_features import BrxFeat
 from src.data_extraction.brx_sample import BrxSamples
 from src.data_extraction.session_update import SessUpdate
+from src.data_extraction.session_date import SessDate
 from src.utils.bq_helper import *
 
 
@@ -71,6 +73,22 @@ class BrxRet(DataRet):
                                table_id=table_id, colnames='*')
 
         session_md.run()
+
+    def paid_session_date(self, table_id):
+
+        logger.info('Updating sessions date...')
+
+        p_session_date = SessDate(self.dataset_id, table_id=table_id, colnames='*')
+
+        p_session_date.run()
+
+    def session_md(self, table_id):
+
+        logger.info('Updating session history with markdown info...')
+
+        session_md_po = SessMdpo(self.dataset_id, table_id=table_id, colnames='*')
+
+        session_md_po.run()
 
     def page_ext(self, table_id):
 
@@ -159,10 +177,13 @@ class BrxRet(DataRet):
 
         self.session_ext(table_id='_session_raw_agg')
 
-        if not self.ext:
+        if self.ext:
+            self.session_md_ext(table_id='_session_md')
+        else:
             self.paid_session_update(table_id='_sessionId_update')
-
-        self.session_md_ext(table_id='_session_md')
+            self.session_md_ext(table_id='_session_md_po')
+            self.session_md(table_id='_session_md')
+            self.paid_session_date(table_id='_session_date_po')
 
         self.page_ext(table_id='_page_raw')
 
@@ -175,6 +196,8 @@ class BrxRet(DataRet):
         tables_to_delete = ['_products', '_employees', '_adwords', '_audiences', '_markdown', '_session_raw_agg',
                             '_session_md', '_page_raw', '_page_features', '_pdp_features', '_session_features',
                             '_users']
+
+        date_dataset = pd.DataFrame()
 
         if self.ext:
 
@@ -203,9 +226,13 @@ class BrxRet(DataRet):
 
             ads_dataset = self.sync(table_id='_ad_users_po')
 
-            ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
+            date_dataset = self.sync(table_id='_session_date_po')
 
-            delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
+            date_dataset.reset_index(inplace=True, drop=True)
+
+            ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po',
+                                                       '_session_date_po', '_session_md_po']
+            # delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
         brx_dataset.reset_index(inplace=True, drop=True)
 
@@ -215,7 +242,4 @@ class BrxRet(DataRet):
 
         logger.info('Shape of ads data: {}'.format(ads_dataset.shape))
 
-        return brx_dataset, ads_dataset
-
-
-
+        return brx_dataset, ads_dataset, date_dataset

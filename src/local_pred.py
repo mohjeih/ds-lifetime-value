@@ -37,7 +37,9 @@ class LocalPred(object):
 
         X_pred = load(get_data_dir(filename))
 
-        return xgb.DMatrix(data=X_pred.values), X_pred.index.values
+        X_date = load(get_data_dir('date_po.pkl'))
+
+        return xgb.DMatrix(data=X_pred.values), X_pred.index.values, X_date
 
     @staticmethod
     def upload_pred(dataset):
@@ -57,7 +59,7 @@ class LocalPred(object):
 
     def predict(self):
 
-        dpred, ID = LocalPred.load_pred_data(filename='X_pred.pkl')
+        dpred, ID, X_date = LocalPred.load_pred_data(filename='X_pred.pkl')
 
         y_pred_dict = dict()
 
@@ -84,6 +86,10 @@ class LocalPred(object):
         y_pred['value'] = np.expm1(y_pred['value'].values)
 
         y_pred = y_pred.assign(expected_value=lambda x: np.round(x.proba*x.value, 4))
+
+        y_pred = pd.merge(y_pred, X_date, how='left', on='ID')
+
+        y_pred = y_pred[['timestamp', 'date', 'ID', 'proba', 'value', 'expected_value']]
 
         LocalPred.upload_pred(y_pred)
 

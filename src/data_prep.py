@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class DataPrep(object):
 
-    def __init__(self, trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, test_size, aws_env):
+    def __init__(self, trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, date_po, test_size, aws_env):
 
         self.trx_pt = trx_pt
         self.brx_pt = brx_pt
@@ -33,6 +33,7 @@ class DataPrep(object):
         self.trx_po = trx_po
         self.brx_po = brx_po
         self.ads_po = ads_po
+        self.date_po = date_po
         self.test_size = test_size
         self.aws_env = aws_env
 
@@ -319,5 +320,7 @@ class DataPrep(object):
         dump(X_pred, get_data_dir('X_pred.pkl'))
 
         DataPrep.dump_data(self.ads_po, 'ads_po.pkl')
+
+        DataPrep.dump_data(self.date_po, 'date_po.pkl')
 
         logger.info('Elapsed time of preparing data: {}'.format(sw.elapsed.human_str()))
