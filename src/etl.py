@@ -30,10 +30,10 @@ class DataExt(object):
 
         self.calib = calib
 
+        self.non_adj = non_adj
+
         logger.info('calib: {}'.format(self.calib))
         logger.info('non_adj: {}'.format(self.non_adj))
-
-        self.non_adj = non_adj
 
         self.end_po = datetime.today().strftime('%Y-%m-%d')
 
