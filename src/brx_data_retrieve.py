@@ -27,9 +27,10 @@ from src.utils.bq_helper import *
 
 class BrxRet(DataRet):
 
-    def __init__(self, start_date, end_date, ext):
+    def __init__(self, start_date, end_date, ext, non_adj):
         super().__init__(start_date, end_date)
         self.ext = ext
+        self.non_adj = non_adj
 
     def ad_ext(self, table_id):
 
@@ -180,10 +181,13 @@ class BrxRet(DataRet):
         if self.ext:
             self.session_md_ext(table_id='_session_md')
         else:
-            self.paid_session_update(table_id='_sessionId_update')
-            self.session_md_ext(table_id='_session_md_po')
-            self.session_md(table_id='_session_md')
-            self.paid_session_date(table_id='_session_date_po')
+            if self.non_adj:
+                self.session_md_ext(table_id='_session_md_po')
+            else:
+                self.paid_session_update(table_id='_sessionId_update')
+                self.session_md_ext(table_id='_session_md_po')
+                self.session_md(table_id='_session_md')
+                self.paid_session_date(table_id='_session_date_po')
 
         self.page_ext(table_id='_page_raw')
 

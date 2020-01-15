@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True)
+    data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True, non_adj=True)
 
     data_ext.extract_transform_load()
 

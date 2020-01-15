@@ -22,13 +22,15 @@ logger = logging.getLogger(__name__)
 
 class DataExt(object):
 
-    def __init__(self, last_n_weeks, aws_env, calib):
+    def __init__(self, last_n_weeks, aws_env, calib, non_adj):
 
         self.last_n_weeks = last_n_weeks
 
         self.aws_env = aws_env
 
         self.calib = calib
+
+        self.non_adj = non_adj
 
         self.end_po = datetime.today().strftime('%Y-%m-%d')
 
@@ -59,7 +61,7 @@ class DataExt(object):
             trx_prep = TrxPrep(self.start_pt, self.end_pt, trx_threshold, ext=ext)
             trx_pt = trx_prep.trx_data_prep()
 
-            brx_prep = BrxPrep(self.start_pt, self.end_pt, brx_threshold, ext=ext)
+            brx_prep = BrxPrep(self.start_pt, self.end_pt, brx_threshold, ext=ext, non_adj=self.non_adj)
             brx_pt, ads_pt, _ = brx_prep.brx_data_prep()
 
         logger.info('Extracting observation data: {} to {}...'.format(self.start_po, self.end_po))
@@ -67,7 +69,7 @@ class DataExt(object):
         trx_prep = TrxPrep(self.start_po, self.end_po, trx_threshold, ext=False)
         trx_po = trx_prep.trx_data_prep()
 
-        brx_prep = BrxPrep(self.start_po, self.end_po, brx_threshold, ext=False)
+        brx_prep = BrxPrep(self.start_po, self.end_po, brx_threshold, ext=False, non_adj=self.non_adj)
         brx_po, ads_po, date_po = brx_prep.brx_data_prep()
 
         data_prep = DataPrep(trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, date_po,

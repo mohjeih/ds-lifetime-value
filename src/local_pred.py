@@ -117,6 +117,8 @@ def get_args():
     parser.add_argument('--reg_model', action='store', help="Name of regressor", dest='reg_model', type=str,
                         default='reg')
 
+    parser.add_argument('--non_adj', action='store_false', help="Non adjustment", dest='non_adj')
+
     return parser.parse_args()
 
 
@@ -126,7 +128,7 @@ if __name__ == '__main__':
 
         args = get_args()
 
-        data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=False)
+        data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=False, non_adj=args.non_adj)
 
         data_ext.extract_transform_load()
 

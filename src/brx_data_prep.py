@@ -20,11 +20,12 @@ logger = logging.getLogger(__name__)
 
 class BrxPrep(object):
 
-    def __init__(self, start_date, end_date, threshold, ext):
+    def __init__(self, start_date, end_date, threshold, ext, non_adj):
         self.start_date = start_date
         self.end_date = end_date
         self.threshold = threshold
         self.ext = ext
+        self.non_adj = non_adj
 
     @staticmethod
     def user_gens(dataset, chunk_size=50000):
@@ -119,9 +120,9 @@ class BrxPrep(object):
         date_dataset = pd.DataFrame()
 
         if self.ext:
-            brx_dataset, ads_dataset, _ = BrxRet(self.start_date, self.end_date, self.ext).ret()
+            brx_dataset, ads_dataset, _ = BrxRet(self.start_date, self.end_date, self.ext, self.non_adj).ret()
         else:
-            brx_dataset, ads_dataset, date_dataset = BrxRet(self.start_date, self.end_date, self.ext).ret()
+            brx_dataset, ads_dataset, date_dataset = BrxRet(self.start_date, self.end_date, self.ext, self.non_adj).ret()
 
         ads_dataset = BrxPrep.ads_prep(ads_dataset)
 
