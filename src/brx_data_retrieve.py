@@ -182,7 +182,7 @@ class BrxRet(DataRet):
             self.session_md_ext(table_id='_session_md')
         else:
             if self.non_adj:
-                self.session_md_ext(table_id='_session_md_po')
+                self.session_md_ext(table_id='_session_md')
             else:
                 self.paid_session_update(table_id='_sessionId_update')
                 self.session_md_ext(table_id='_session_md_po')
