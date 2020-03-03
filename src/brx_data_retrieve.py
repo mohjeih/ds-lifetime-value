@@ -8,20 +8,7 @@ Created on Aug 2019
 """
 
 from src.data_retrieve import DataRet
-from src.data_extraction.session_agg import SessionRaw
-from src.data_extraction.session_agg_md import SessionMd
-from src.data_extraction.session_md_po import SessMdpo
-from src.data_extraction.audiences import AudRaw
-from src.data_extraction.adwords import AdRaw
-from src.data_extraction.ad_users import AdUsers
-from src.data_extraction.page_raw import PageRaw
-from src.data_extraction.page_features import PageFeat
-from src.data_extraction.pdp_features import PdpFeat
-from src.data_extraction.session_features import SessionFeat
-from src.data_extraction.brx_features import BrxFeat
-from src.data_extraction.brx_sample import BrxSamples
-from src.data_extraction.session_update import SessUpdate
-from src.data_extraction.session_date import SessDate
+from src.data_extraction.bq_extractors import *
 from src.utils.bq_helper import *
 
 
@@ -57,12 +44,21 @@ class BrxRet(DataRet):
 
         session_raw.run()
 
+    def app_session_ext(self, table_id):
+
+        logger.info('Extracting mobile-app session history...')
+
+        session_raw = AppSessionRaw(self.dataset_id, self.start_date, self.end_date,
+                                    table_id=table_id, colnames='*')
+
+        session_raw.run()
+
     def paid_session_update(self, table_id):
 
         logger.info('Updating paid sessions table...')
 
         session_update = SessUpdate(self.dataset_id, table_id=table_id,
-                                 colnames='*', overwrite=False)
+                                    colnames='*', overwrite=False)
 
         session_update.run()
 
@@ -72,6 +68,15 @@ class BrxRet(DataRet):
 
         session_md = SessionMd(self.dataset_id, self.ext, self.start_date, self.end_date,
                                table_id=table_id, colnames='*')
+
+        session_md.run()
+
+    def app_session_md_ext(self, table_id):
+
+        logger.info('Integrating mobile-app session history with markdown info...')
+
+        session_md = AppSessionMd(self.dataset_id, self.ext, self.start_date, self.end_date,
+                                  table_id=table_id, colnames='*')
 
         session_md.run()
 
@@ -91,12 +96,37 @@ class BrxRet(DataRet):
 
         session_md_po.run()
 
+    def app_session_md(self, table_id):
+
+        logger.info('Updating mobile-app session history with markdown info...')
+
+        session_md_po = AppSessMdpo(self.dataset_id, table_id=table_id, colnames='*')
+
+        session_md_po.run()
+
     def page_ext(self, table_id):
 
         logger.info('Extracting page history...')
 
         page_raw = PageRaw(self.dataset_id, self.ext, self.start_date, self.end_date,
                            table_id=table_id, colnames='*')
+
+        page_raw.run()
+
+    def app_page_ext(self, table_id):
+
+        logger.info('Extracting mobile-app page history...')
+
+        page_raw = AppPageRaw(self.dataset_id, self.start_date, self.end_date,
+                              table_id=table_id, colnames='*')
+
+        page_raw.run()
+
+    def app_bq_union(self, table_id, query_filename):
+
+        logger.info('Merging bq and mobile app data...')
+
+        page_raw = UnionData(self.dataset_id, table_id=table_id, query_filename=query_filename, colnames='*')
 
         page_raw.run()
 
@@ -178,18 +208,33 @@ class BrxRet(DataRet):
 
         self.session_ext(table_id='_session_raw_agg')
 
+        self.app_session_ext(table_id='_app_session_raw_agg')
+
         if self.ext:
             self.session_md_ext(table_id='_session_md')
+            self.app_session_md_ext(table_id='_app_session_md')
         else:
             if self.non_adj:
                 self.session_md_ext(table_id='_session_md')
+                self.app_session_md_ext(table_id='_app_session_md')
             else:
-                self.paid_session_update(table_id='_sessionId_update')
+                self.paid_session_update(table_id='_sessionId_update')  # Do not delete _sessionId_update table
                 self.session_md_ext(table_id='_session_md_po')
+                self.app_session_md_ext(table_id='_app_session_md_po')
                 self.session_md(table_id='_session_md')
+                self.app_session_md(table_id='_app_session_md')
+
+        self.app_bq_union(table_id='_session_md', query_filename='session_md_union.sql')
+
+        if not self.ext:
+            if not self.non_adj:
                 self.paid_session_date(table_id='_session_date_po')
 
         self.page_ext(table_id='_page_raw')
+
+        self.app_page_ext(table_id='_app_page_raw')
+
+        self.app_bq_union(table_id='_page_raw', query_filename='page_union.sql')
 
         self.page_feat_ext(table_id='_page_features')
 
@@ -199,7 +244,7 @@ class BrxRet(DataRet):
 
         tables_to_delete = ['_products', '_employees', '_adwords', '_audiences', '_markdown', '_session_raw_agg',
                             '_session_md', '_page_raw', '_page_features', '_pdp_features', '_session_features',
-                            '_users']
+                            '_users', '_app_session_raw_agg', '_app_session_md', '_app_page_raw']
 
         date_dataset = pd.DataFrame()
 
@@ -230,12 +275,16 @@ class BrxRet(DataRet):
 
             ads_dataset = self.sync(table_id='_ad_users_po')
 
-            date_dataset = self.sync(table_id='_session_date_po')
+            if not self.non_adj:
+                date_dataset = self.sync(table_id='_session_date_po')
+                date_dataset.reset_index(inplace=True, drop=True)
 
-            date_dataset.reset_index(inplace=True, drop=True)
+            ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
 
-            ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po',
-                                                       '_session_date_po', '_session_md_po']
+            if not self.non_adj:
+                ext_tables_to_delete = ext_tables_to_delete + ['_session_md_po', '_app_session_md_po',
+                                                               '_session_date_po']
+
             # delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
         brx_dataset.reset_index(inplace=True, drop=True)
