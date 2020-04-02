@@ -285,7 +285,7 @@ class BrxRet(DataRet):
                 ext_tables_to_delete = ext_tables_to_delete + ['_session_md_po', '_app_session_md_po',
                                                                '_session_date_po']
 
-            # delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
+            delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
         brx_dataset.reset_index(inplace=True, drop=True)
 
