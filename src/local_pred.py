@@ -13,6 +13,7 @@ import logging
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from pathlib import Path
 from src.etl import DataExt
 from src.utils.path_helper import get_data_dir, get_model_dir
 from src.utils.resources import load
@@ -92,6 +93,10 @@ class LocalPred(object):
         y_pred = y_pred[['timestamp', 'date', 'ID', 'proba', 'value', 'expected_value']]
 
         LocalPred.upload_pred(y_pred)
+
+        for f in ['X_pred.pkl', 'ads_po.pkl', 'date_po.pkl']:
+            if Path(get_data_dir(f)).is_file():
+                Path.unlink(get_data_dir(f))
 
         return y_pred
 
