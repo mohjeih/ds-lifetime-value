@@ -74,7 +74,8 @@ def model_calib(clf_model, reg_model):
                            project_id=load_project_id(), if_exists='append')
 
     for f in ['clf_train.pkl', 'clf_val.pkl', 'reg_train.pkl', 'reg_val.pkl',
-              'ads_pt.pkl', 'ads_po.pkl', 'X_pred.pkl', 'date_po.pkl']:
+              'ads_pt.pkl', 'ads_po.pkl', 'X_pred.pkl', 'date_po.pkl',
+              'agg_cak.csv', 'agg_ca.csv', 'agg_c.csv']:
         if Path(get_data_dir(f)).is_file():
             Path.unlink(get_data_dir(f))
 
