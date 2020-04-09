@@ -14,10 +14,12 @@ import argparse
 import datetime
 import logging
 import pandas as pd
+from pathlib import Path
 from src.etl import DataExt
 from src.local_train import LocalTrain
 from src.utils.agg_helper import agg_res, merge_pred, mapping_dict
 from src.utils.bq_helper import export_pandas_to_table
+from src.utils.path_helper import get_data_dir
 from src.utils.resources import load_project_id
 from timeutils import Stopwatch
 
@@ -70,6 +72,11 @@ def model_calib(clf_model, reg_model):
 
     export_pandas_to_table(dataset_id='ds_sessions_value', table_id='cron_tracker', dataset=metrics_df,
                            project_id=load_project_id(), if_exists='append')
+
+    for f in ['clf_train.pkl', 'clf_val.pkl', 'reg_train.pkl', 'reg_val.pkl',
+              'ads_pt.pkl', 'ads_po.pkl', 'X_pred.pkl', 'date_po.pkl']:
+        if Path(get_data_dir(f)).is_file():
+            Path.unlink(get_data_dir(f))
 
 
 def get_args():
