@@ -27,20 +27,20 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 
-def model_calib(clf_model, reg_model):
+def model_calib(clf_model, reg_model, data_dict):
 
     metrics = dict()
 
     timestamp = datetime.date.today().strftime('%Y-%m-%d')
     metrics.update({'timestamp': [timestamp]})
 
-    clf_calib = LocalTrain(model_name=clf_model)
+    clf_calib = LocalTrain(model_name=clf_model, datasets=data_dict[clf_model])
 
     y_clf_pred, f1_score, _, _, _ = clf_calib.fit_model()
 
     metrics.update({'f1_score': [f1_score]})
 
-    reg_calib = LocalTrain(model_name=reg_model)
+    reg_calib = LocalTrain(model_name=reg_model, datasets=data_dict[reg_model])
 
     y_reg_pred, mae, mape, log_mae, log_mape = reg_calib.fit_model()
 
@@ -112,9 +112,12 @@ if __name__ == '__main__':
 
     data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=True, non_adj=True)
 
-    data_ext.extract_transform_load()
+    clf_train, clf_val, reg_train, reg_val, _ = data_ext.extract_transform_load()
 
-    model_calib(clf_model=args.clf_model, reg_model=args.reg_model)
+    data_dict = {args.clf_model: (clf_train, clf_val),
+                 args.reg_model: (reg_train, reg_val)}
+
+    model_calib(clf_model=args.clf_model, reg_model=args.reg_model, data_dict=data_dict)
 
     logger.info('Total elapsed time: {}'.format(sw.elapsed.human_str()))
 

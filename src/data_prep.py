@@ -232,6 +232,11 @@ class DataPrep(object):
 
         sw = Stopwatch(start=True)
 
+        clf_train = pd.DataFrame()
+        clf_val = pd.DataFrame()
+        reg_train = pd.DataFrame()
+        reg_val = pd.DataFrame()
+
         X_pred = self.po_x()
 
         if not calib:
@@ -286,8 +291,8 @@ class DataPrep(object):
             logger.info('X_clf_train and X_clf_val shapes: {}, {}'.format(X_clf_train.shape, X_clf_val.shape))
             logger.info('y_clf_train and y_clf_val shapes: {}, {}'.format(y_clf_train.shape, y_clf_val.shape))
 
-            DataPrep.dump_data(clf_train, 'clf_train.pkl')
-            DataPrep.dump_data(clf_val, 'clf_val.pkl')
+            # DataPrep.dump_data(clf_train, 'clf_train.pkl')
+            # DataPrep.dump_data(clf_val, 'clf_val.pkl')
 
             # DataPrep.dump_data(clf_train, 'clf_train.csv', pkl_format=False)
             # DataPrep.dump_data(clf_val, 'clf_val.csv', pkl_format=False, train_dir=False)
@@ -301,8 +306,8 @@ class DataPrep(object):
             logger.info('X_reg_train and X_reg_val shapes: {}, {}'.format(X_reg_train.shape, X_reg_val.shape))
             logger.info('y_reg_train and y_reg_val shapes: {}, {}'.format(y_reg_train.shape, y_reg_val.shape))
 
-            DataPrep.dump_data(reg_train, 'reg_train.pkl')
-            DataPrep.dump_data(reg_val, 'reg_val.pkl')
+            # DataPrep.dump_data(reg_train, 'reg_train.pkl')
+            # DataPrep.dump_data(reg_val, 'reg_val.pkl')
 
             # DataPrep.dump_data(reg_train, 'reg_train.csv', pkl_format=False)
             # DataPrep.dump_data(reg_val, 'reg_val.csv', pkl_format=False, train_dir=False)
@@ -317,10 +322,12 @@ class DataPrep(object):
 
         logger.info('X_pred shape: {}'.format(X_pred.shape))
 
-        dump(X_pred, get_data_dir('X_pred.pkl'))
+        # dump(X_pred, get_data_dir('X_pred.pkl'))
 
         DataPrep.dump_data(self.ads_po, 'ads_po.pkl')
 
         DataPrep.dump_data(self.date_po, 'date_po.pkl')
 
         logger.info('Elapsed time of preparing data: {}'.format(sw.elapsed.human_str()))
+
+        return clf_train, clf_val, reg_train, reg_val, X_pred

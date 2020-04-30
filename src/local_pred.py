@@ -27,16 +27,19 @@ logger = logging.getLogger(__name__)
 
 class LocalPred(object):
 
-    def __init__(self, file_dict: dict):
+    def __init__(self, file_dict: dict, dataset: pd.DataFrame):
 
         self.file_dict = file_dict
+        self.dataset = dataset
 
-    @staticmethod
-    def load_pred_data(filename):
+    # @staticmethod
+    # def load_pred_data(filename):
+    def load_pred_data(self):
 
         logger.info('Loading prediction data...')
 
-        X_pred = load(get_data_dir(filename))
+        # X_pred = load(get_data_dir(filename))
+        X_pred = self.dataset
 
         X_date = load(get_data_dir('date_po.pkl'))
 
@@ -60,7 +63,8 @@ class LocalPred(object):
 
     def predict(self):
 
-        dpred, ID, X_date = LocalPred.load_pred_data(filename='X_pred.pkl')
+        # dpred, ID, X_date = LocalPred.load_pred_data(filename='X_pred.pkl')
+        dpred, ID, X_date = self.load_pred_data()
 
         y_pred_dict = dict()
 
@@ -133,11 +137,11 @@ if __name__ == '__main__':
 
         data_ext = DataExt(last_n_weeks=args.last_n_weeks, aws_env=args.aws_env, calib=False, non_adj=False)
 
-        data_ext.extract_transform_load()
+        _, _, _, _, X_pred = data_ext.extract_transform_load()
 
-        file_dict = {'clf': 'clf-model',
-                     'reg': 'reg-model'}
+        file_dict = {args.clf_model: 'clf-model',
+                     args.reg_model: 'reg-model'}
 
-        y_pred = LocalPred(file_dict=file_dict).predict()
+        y_pred = LocalPred(file_dict=file_dict, dataset=X_pred).predict()
 
         logger.info('Total elapsed time: {}'.format(sw.elapsed.human_str()))

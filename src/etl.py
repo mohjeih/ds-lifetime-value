@@ -77,6 +77,8 @@ class DataExt(object):
 
         data_prep = DataPrep(trx_pt, brx_pt, ads_pt, trx_po, brx_po, ads_po, date_po,
                              test_size=0.20, aws_env=self.aws_env)
-        data_prep.prep(self.calib)
+        clf_train, clf_val, reg_train, reg_val, X_pred = data_prep.prep(self.calib)
 
         logger.info('Elapsed time of ETL job: {}'.format(sw.elapsed.human_str()))
+
+        return clf_train, clf_val, reg_train, reg_val, X_pred

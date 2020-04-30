@@ -24,9 +24,10 @@ logger = logging.getLogger(__name__)
 
 class LocalTrain(object):
 
-    def __init__(self, model_name):
+    def __init__(self, model_name: str, datasets: tuple):
 
         self.model_name = model_name
+        self.datasets = datasets
         self.params = self._get_params()
 
     def _get_params(self):
@@ -39,9 +40,11 @@ class LocalTrain(object):
 
         logger.info('Loading data to train {} model...'.format(self.model_name))
 
-        train = load(get_data_dir(self.model_name + '_train.pkl'))
+        # train = load(get_data_dir(self.model_name + '_train.pkl'))
+        train = self.datasets[0]
 
-        val = load(get_data_dir(self.model_name + '_val.pkl'))
+        # val = load(get_data_dir(self.model_name + '_val.pkl'))
+        val = self.datasets[1]
 
         return train, val
 
