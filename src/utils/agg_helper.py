@@ -25,15 +25,15 @@ mapping_dict = {'cak_level': ['campaignId', 'adGroupId', 'criteriaId'], 'ca_leve
                 'ca_col': ['campaignId', 'adGroupId', 'users', 'AOV'], 'c_col': ['campaignId', 'users', 'AOV']}
 
 
-def load_agg_data():
+def load_agg_data(clf_val, reg_val):
 
-    clf_val = load(get_data_dir('clf_val.pkl'))
+    # clf_val = load(get_data_dir('clf_val.pkl'))
     X_val = clf_val.drop(columns=['LTV_active'], axis=1)
     y_clf_val = clf_val[['LTV_active']]
 
     val_index = X_val.index
 
-    reg_val = load(get_data_dir('reg_val.pkl'))
+    # reg_val = load(get_data_dir('reg_val.pkl'))
     y_reg_val = reg_val[['LTV_52W']]
     y_reg_val = y_reg_val.assign(raw_LTV_52W=lambda x: np.expm1(x.LTV_52W))
 
@@ -94,9 +94,9 @@ def merge_agg(val_dataset, pred_dataset, cols, level, val_col, count_col, filena
     return dataset
 
 
-def merge_pred(pred_proba):
+def merge_pred(pred_proba, clf_val, reg_val):
 
-    X_val, y_val, val_index = load_agg_data()
+    X_val, y_val, val_index = load_agg_data(clf_val, reg_val)
 
     clf_pred_df = pd.DataFrame(data=pred_proba, index=val_index, columns=['pred_proba'])
 

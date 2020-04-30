@@ -47,7 +47,7 @@ def model_calib(clf_model, reg_model, data_dict):
     metrics.update({'log_scale_mae_score': [log_mae], 'log_scale_mape_score': [log_mape],
                     'mae_score': [mae], 'mape_score': [mape]})
 
-    merge_df, val_index, exp_mae = merge_pred(y_clf_pred)
+    merge_df, val_index, exp_mae = merge_pred(y_clf_pred, data_dict[clf_model][1], data_dict[reg_model][1])
 
     metrics.update({'exp_mae': [exp_mae]})
 
