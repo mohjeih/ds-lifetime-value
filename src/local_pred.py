@@ -88,7 +88,7 @@ class LocalPred(object):
 
         y_pred = pd.DataFrame(y_pred_dict).rename(columns={'clf': 'proba', 'reg': 'value'})
 
-        y_pred['value'] = np.expm1(y_pred['value'].values)
+        y_pred['value'] = np.expm1(y_pred['value'].values + 0.5 * np.var(y_pred['value'].values))
 
         y_pred = y_pred.assign(expected_value=lambda x: np.round(x.proba*x.value, 4))
 

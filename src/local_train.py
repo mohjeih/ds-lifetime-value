@@ -86,7 +86,7 @@ class LocalTrain(object):
             logger.info('confusion matrix: \n {}'.format(conf_matrix(y_val.values, y_label)))
             return y_pred, f1score, None, None, None
         else:
-            back_y_pred = np.expm1(y_pred)
+            back_y_pred = np.expm1(y_pred + 0.5 * np.var(y_pred))
             logger.info('User level log scale...')
             mae_log, mape_log = eval_metric(y_val, y_pred, agg=False)
             logger.info('User level back transformation...')
