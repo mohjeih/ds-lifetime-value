@@ -64,7 +64,40 @@ from `ds_sessions_value._session_md`
 on pdp.sessionId = s.sessionId
 where (pdp.date >= '@start_date' and pdp.date <= '@end_date')) pdps
 
-left join `843777.lnk_fullVisitorId_memberID_unique` lnk
+left join
+
+(
+select distinct
+  fullVisitorId,
+  ARRAY_AGG(memberID
+  ORDER BY
+    memberID DESC
+  LIMIT
+    1)
+    [
+OFFSET
+  (0)] AS memberID
+FROM (
+  SELECT
+    fullVisitorId,
+    c.value AS memberID
+  FROM
+    `843777.ga_sessions_*`,
+    UNNEST(customDimensions) AS c
+  WHERE
+    _TABLE_SUFFIX >= FORMAT_DATETIME("%Y%m%d",
+      DATETIME_SUB(CURRENT_DATETIME(),
+        INTERVAL 4 hour))
+    AND c.index = 9
+    AND SAFE_CAST(c.value AS FLOAT64) IS NOT NULL
+  UNION ALL
+  SELECT
+    *
+  FROM
+    `843777.lnk_fullVisitorId_memberID_unique`)
+GROUP BY
+  fullVisitorId
+) lnk
 
 on pdps.fullVisitorId =  lnk.fullVisitorId) pdpsm
 
