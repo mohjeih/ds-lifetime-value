@@ -33,7 +33,6 @@ select distinct
     s.mobileDeviceBranding,
     s.deviceLanguage,
     s.deviceCountry,
---     s.continent,
     s.subContinent,
     s.country,
     s.city,
