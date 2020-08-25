@@ -50,14 +50,14 @@ tm.*
 
 from
 
-(select t.*  except(memberID,`date`, channel, campaignId, adGroupId, boomUserlistId, criteriaId),
+(select t.*  except(`date`, channel, campaignId, adGroupId, boomUserlistId, criteriaId),
 first_value(`date` IGNORE NULLS) over (partition by sessionId order by `date`, visitId asc) date,
 first_value(channel IGNORE NULLS) over (partition by sessionId order by `date`, visitId asc) channel,
 first_value(campaignId IGNORE NULLS) over (partition by sessionId order by `date`, visitId asc) campaignId,
 first_value(adGroupId IGNORE NULLS) over (partition by sessionId order by `date`, visitId asc) adGroupId,
 first_value(boomUserlistId IGNORE NULLS) over (partition by sessionId order by `date`, visitId asc) boomUserlistId,
 first_value(criteriaId IGNORE NULLS) over (partition by sessionId order by `date`, visitId asc) criteriaId
-from `ds_sessions_value.session_raw` t
+from `ds_user_data.session_raw` t
 where (`date` >= '@start_date' and `date` <= '@end_date')) as tm
 
 left join

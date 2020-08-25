@@ -46,7 +46,7 @@ from
   criteriaId,
   SAFE_CAST(null AS STRING) AS UserListName
 
-from `ds_sessions_value.app_session_raw`
+from `ds_user_data.app_session_raw`
 where (SAFE_CAST(date as STRING) >= '@start_date' and SAFE_CAST(date as STRING) <= '@end_date')) tm
 
 left join

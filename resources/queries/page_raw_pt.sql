@@ -54,7 +54,7 @@ pdp.isPDP_Women,
 pdp.isEditorial,
 pdp.isPLP_Men_brand,
 pdp.isPLP_Women_brand
-from `ds_sessions_value.page_raw` pdp
+from `ds_user_data.page_raw` pdp
 
 inner join (
 select distinct sessionId

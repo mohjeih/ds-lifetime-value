@@ -9,7 +9,7 @@ from(
 
 select distinct
 SAFE_CAST(pdps.memberID as STRING) as ID,
-pdps.* except(memberID)
+pdps.*
 
 from
 
@@ -34,7 +34,7 @@ pdp.isPDP_Women,
 SAFE_CAST(null AS INT64) as isEditorial,
 pdp.isPLP_Men_brand,
 pdp.isPLP_Women_brand
-from `ds_sessions_value.app_page_raw` pdp
+from `ds_sessions_value.app_page_raw` pdp  -- ds_user_data
 
 inner join (
 select distinct sessionId
