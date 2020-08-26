@@ -34,7 +34,7 @@ pdp.isPDP_Women,
 SAFE_CAST(null AS INT64) as isEditorial,
 pdp.isPLP_Men_brand,
 pdp.isPLP_Women_brand
-from `ds_sessions_value.app_page_raw` pdp  -- ds_user_data
+from `ds_user_data.app_page_raw` pdp
 
 inner join (
 select distinct sessionId
