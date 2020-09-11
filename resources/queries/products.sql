@@ -19,7 +19,7 @@ select distinct
       case when pc1.department = 1 then 'ACC'
       when pc1.department = 2 then 'BAGS'
       when pc1.department = 3 then 'RTW'
-      else 'SHOES' end as dept,
+      when pc1.department = 4 then 'SHOES' end as dept,
 	  coalesce(pc2.name,pc1.name) as category,
 	  pc1.name AS subCategory,
       case when spt.name like 'SSENSE%%' then
