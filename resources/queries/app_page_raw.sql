@@ -31,9 +31,11 @@ pdp.isWishlist,
 pdp.isShoppingBag,
 pdp.isPDP_Men,
 pdp.isPDP_Women,
+pdp.isPDP_EverythingElse,
 SAFE_CAST(null AS INT64) as isEditorial,
 pdp.isPLP_Men_brand,
-pdp.isPLP_Women_brand
+pdp.isPLP_Women_brand,
+pdp.isPLP_EverythingElse_brand
 from `ds_user_data.app_page_raw` pdp
 
 inner join (

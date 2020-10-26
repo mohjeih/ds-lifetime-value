@@ -8,16 +8,19 @@ select distinct
 	   c.ID as cartID,
 	   date(c.invoiceDate) as cartDate,
 	   c.invoice as invoiceID,
-	   case when pc1.department = 1 then 'ACC'
-	   when pc1.department = 2 then 'BAGS'
-	   when pc1.department = 3 then 'RTW'
-	   when pc1.department = 4 then 'SHOES' end as dept,
-	   coalesce(pc2.name,pc1.name) as category,
-	   pc1.name AS subCategory,
-	   pbr.seo_keyword as brand,
+	   CASE WHEN spc3.ID is not NULL THEN spc3.name
+	   WHEN (spc3.ID is NULL) and (spc2.ID is not NULL) THEN spc2.name
+	   ELSE spc1.name END AS dept,
+	   CASE WHEN spc2.parent_id is not NULL THEN spc2.name
+	   ELSE spc1.name END AS category,
+	   spc1.name AS subCategory,
+	   sd.seo_keyword as brand,
 	   ci.productID as productID,
 	   ci.sizeId as sizeId,
-	   case when p.gender = 'female' then 'Women' else 'Men' end as genderT,
+	   CASE WHEN (spc1.department in (1,2,3,4)) and (p.gender = 'female') THEN 'Women'
+       WHEN (spc1.department in (1,2,3,4)) and (p.gender = 'male') THEN 'Men'
+       WHEN (spc1.department NOT in (1,2,3,4)) then 'Everything_Else'
+       ELSE 'Men' END AS genderT,
 	   concat(case when p.season = 1 then 'SS' else 'FW' end,
 	   cast(case when p.currentYear >= 6 then p.currentYear + 2000 else p.currentYear + 2010 end as char)) as seasonYear,
        case when (ci.salePercentage >= 0 and ci.salePercentage < 1) then round(ci.salePercentage, 2)
@@ -40,12 +43,14 @@ select distinct
 from carts c
 join cart_items ci on ci.cartID = c.ID
 join products p on p.ID = ci.productID
-join smart_designer pbr on pbr.ID = p.brandID
-join category pc1 on pc1.ID = p.newCategoryID
-left join category pc2 on pc2.ID = pc1.parent_ID
+join smart_product spd on spd.ID = p.ID
+join product_brands pb on pb.ID = p.brandID
+join smart_designer sd on sd.ID = spd.designer_id
+join smart_category spc1 on spc1.ID = spd.category_id
+left outer join smart_category spc2 on spc2.ID = spc1.parent_id
+left outer join smart_category spc3 on spc3.ID = spc2.parent_id
 join exchange_rates er on er.targetCurrencyID = c.currencyID and er.date = date(c.invoiceDate)
 join order_status cs on cs.cart_id = c.ID and cs.active = 1 and cs.status <> 'cancelled'
--- join product_sizes ps on ps.ID = ci.sizeID
 join costs costs on costs.productSizeID = ci.sizeID
 left join return_items ri on ri.originalOrderItemID = ci.ID
 left join cart_return_items cri on ri.returnRequestItemID = cri.ID
