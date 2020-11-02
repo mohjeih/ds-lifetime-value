@@ -281,11 +281,12 @@ class BrxRet(DataRet):
                 date_dataset = self.sync(table_id='_session_date_po')
                 date_dataset.reset_index(inplace=True, drop=True)
 
-            ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
+            ext_tables_to_delete = tables_to_delete # + ['_brx_features_po', '_ad_users_po', '_invoices_po']
 
             if not self.non_adj:
-                ext_tables_to_delete = ext_tables_to_delete + ['_session_md_po', '_app_session_md_po',
-                                                               '_session_date_po']
+                ext_tables_to_delete = ext_tables_to_delete
+                                       # + ['_session_md_po', '_app_session_md_po',
+                                                             #  '_session_date_po']
 
             delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
