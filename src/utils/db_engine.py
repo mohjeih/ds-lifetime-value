@@ -15,6 +15,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from src.utils.path_helper import get_config
 from src.utils.mysql_character_fix import mysql_character_fix
+from dsutil.access import credential_stats_db, credential_hq_db, credential_data_lake_db
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,12 +54,15 @@ def load_configuration(db_name, filename='config.yml'):
 
 def mysql_engine(db_name: str, echo=False):
 
-    credentials = load_configuration(db_name)
+    db_dict = {'ssense': credential_hq_db,
+               'stats': credential_stats_db}
+
+    credentials = db_dict[db_name]()
 
     try:
-        engine_name = (f"mysql+pymysql://{credentials['user']}:"
-                       f"{credentials['pwd']}@{credentials['host']}/"
-                       f"{credentials['db']}")
+        engine_name = (f"mysql+pymysql://{credentials['username']}:"
+                       f"{credentials['password']}@{credentials['host']}/"
+                       f"{credentials['schema']}")
         return create_engine(engine_name,
                              pool_recycle=2,
                              echo=echo)
@@ -120,4 +124,3 @@ def get_aws_role(name: str):
     else:
         message = 'The current AWS identity is not a role: {}'
         raise ValueError(message.format(aws_role['aws_role']))
-

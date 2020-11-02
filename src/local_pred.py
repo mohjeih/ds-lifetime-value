@@ -20,6 +20,7 @@ from src.utils.resources import load
 from src.utils.bq_helper import export_pandas_to_table
 from src.utils.resources import load_project_id
 from timeutils import Stopwatch
+from dsutil.access import set_credentials
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -132,6 +133,8 @@ def get_args():
 if __name__ == '__main__':
 
         sw = Stopwatch(start=True)
+
+        set_credentials()
 
         args = get_args()
 

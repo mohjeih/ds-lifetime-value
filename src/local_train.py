@@ -13,9 +13,9 @@ import sys
 import xgboost as xgb
 from sklearn.metrics import f1_score, classification_report
 from src.params.model_params import *
-from src.utils.path_helper import get_data_dir, get_model_dir, get_params_dir
+from src.utils.path_helper import get_model_dir, get_params_dir
 from src.utils.ml_helper import conf_matrix, eval_metric
-from src.utils.resources import dump, FlushFile, load, load_param_json
+from src.utils.resources import dump, FlushFile, load_param_json
 from timeutils import Stopwatch
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -145,4 +145,3 @@ class LocalTrain(object):
         dump(model, get_model_dir(self.model_name + '-model'))
 
         return y_pred, metric_1, metric_2, metric_3, metric_4
-

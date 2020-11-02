@@ -14,16 +14,10 @@ import pandas as pd
 from abc import ABCMeta, ABC, abstractmethod
 from google.cloud import bigquery
 from typing import Dict
-from src.utils.path_helper import get_config
 from src.utils.db_engine import get_data_slave
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-if 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = (
-        str(get_config('ssense-3c92053ad127.json'))
-    )
 
 
 class Connector(ABC):
@@ -176,7 +170,3 @@ class GenericDataClass:
 
         """
         return self.table
-
-
-
-
