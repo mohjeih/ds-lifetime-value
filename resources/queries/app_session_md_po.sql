@@ -23,7 +23,7 @@ where sc.channel in ('SEM_PLA', 'SEM_Non_Branded', 'Display')
 and sc.date in (
     select distinct so.date as so_date
     from `ds_sessions_value._app_session_raw_agg` so
-    where (PARSE_DATE('%Y-%m-%d', so.date) >= DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)
+    where (PARSE_DATE('%Y-%m-%d', so.date) >= DATE_ADD(CURRENT_DATE(), INTERVAL - 2 DAY)
           and PARSE_DATE('%Y-%m-%d', so.date) <= CURRENT_DATE())
           )
 ) as t
