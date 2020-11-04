@@ -242,10 +242,9 @@ class BrxRet(DataRet):
 
         self.session_feat_ext(table_id='_session_features')
 
-        tables_to_delete = ['_products']
-            # , '_employees', '_adwords', '_audiences', '_markdown', '_session_raw_agg',
-            #                 '_session_md', '_page_raw', '_page_features', '_pdp_features', '_session_features',
-            #                 '_users', '_app_session_raw_agg', '_app_session_md', '_app_page_raw']
+        tables_to_delete = ['_products' , '_employees', '_adwords', '_audiences', '_markdown', '_session_raw_agg',
+                            '_session_md', '_page_raw', '_page_features', '_pdp_features', '_session_features',
+                            '_users', '_app_session_raw_agg', '_app_session_md', '_app_page_raw']
 
         date_dataset = pd.DataFrame()
 
@@ -261,9 +260,8 @@ class BrxRet(DataRet):
 
             ads_dataset = self.sync(table_id='_ad_users_pt')
 
-            ext_tables_to_delete = tables_to_delete
-                                   # + ['_brx_features_pt', '_brx_sample', '_ad_users_pt',
-                                   #                     '_invoices']
+            ext_tables_to_delete = tables_to_delete + ['_brx_features_pt', '_brx_sample', '_ad_users_pt',
+                                                       '_invoices']
 
             delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
@@ -281,12 +279,11 @@ class BrxRet(DataRet):
                 date_dataset = self.sync(table_id='_session_date_po')
                 date_dataset.reset_index(inplace=True, drop=True)
 
-            ext_tables_to_delete = tables_to_delete # + ['_brx_features_po', '_ad_users_po', '_invoices_po']
+            ext_tables_to_delete = tables_to_delete + ['_brx_features_po', '_ad_users_po', '_invoices_po']
 
             if not self.non_adj:
-                ext_tables_to_delete = ext_tables_to_delete
-                                       # + ['_session_md_po', '_app_session_md_po',
-                                                             #  '_session_date_po']
+                ext_tables_to_delete = ext_tables_to_delete + ['_session_md_po', '_app_session_md_po',
+                                                              '_session_date_po']
 
             delete_table(dataset_id=self.dataset_id, table_ids=ext_tables_to_delete)
 
