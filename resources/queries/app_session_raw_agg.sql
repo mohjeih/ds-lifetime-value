@@ -71,6 +71,7 @@ FROM (
     _TABLE_SUFFIX >= FORMAT_DATETIME("%Y%m%d",
       DATETIME_SUB(CURRENT_DATETIME(),
         INTERVAL 4 hour))
+        AND platform != 'WEB'
        AND SAFE_CAST(user_id AS FLOAT64) IS NOT NULL
   UNION ALL
   SELECT
