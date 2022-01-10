@@ -55,7 +55,8 @@ class BrxPrep(object):
         dataset.set_index('ID', inplace=True)
 
         col2float = dataset.columns[~(dataset.dtypes == 'object')]
-        dataset[col2float] = dataset[col2float].astype('float64')
+        for c in col2float:
+            dataset[c] = dataset[c].astype('float32')
 
         logger.info('brx shape: {}'.format(dataset.shape))
 
